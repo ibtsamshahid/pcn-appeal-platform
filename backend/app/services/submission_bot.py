@@ -96,10 +96,9 @@ def submit_appeal_via_bot(notice, appeal, demo_hold_seconds: float = None) -> di
     def _run():
         try:
             with sync_playwright() as p:
-         browser = p.chromium.launch(
+                       browser = p.chromium.launch(
                     headless=BOT_HEADLESS,
-                    slow_mo=150 if not BOT_HEADLESS else 0,
-                    args=["--disable-dev-shm-usage", "--disable-gpu", "--no-sandbox"],
+                    slow_mo=150 if not BOT_HEADLESS else 0,  # slow down so a human watching can follow along
                 )
                 try:
                     page = browser.new_page()
