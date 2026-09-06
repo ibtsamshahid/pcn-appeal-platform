@@ -1,0 +1,61 @@
+# Render "Blueprint" — lets Render create both services + the database in
+# one go from https://dashboard.render.com/blueprints ("New +" > "Blueprint",
+# pick this repo). You can also skip this file entirely and click each
+# service together by hand; see DEPLOYMENT_GUIDE.md for both routes.
+#
+# Fields marked `sync: false` are secrets/values Render will prompt you for
+# once during setup rather than storing in this file (so real keys never
+# get committed to git).
+databases:
+  - name: pcn-db
+    plan: free
+    databaseName: pcn
+    user: pcn
+
+services:
+  # Main portal: FastAPI API + the bundled static UI, built from a Dockerfile
+  # because it needs tesseract/poppler/Playwright's Chromium — packages a
+  # plain Python buildpack can't install.
+  - type: web
+    name: pcn-backend
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: pcn-db
+          property: connectionString
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      # Set this to this same service's own public URL after the first
+      # deploy (e.g. https://pcn-backend.onrender.com) — Stripe Checkout
+      # redirects the browser back here. See DEPLOYMENT_GUIDE.md.
+      - key: FRONTEND_BASE_URL
+        sync: false
+      # Set this to the pcn-mock-site service's public URL after it
+      # deploys (e.g. https://pcn-mock-site.onrender.com).
+      - key: MOCK_SITE_URL
+        sync: false
+      # Must be true on a server — there's no display to show a headed
+      # browser on.
+      - key: BOT_HEADLESS
+        value: "true"
+
+  # Sandbox "fictional council" site the submission bot targets. Plain
+  # Python service — no OS-level dependencies, so no Dockerfile needed.
+  - type: web
+    name: pcn-mock-site
+    runtime: python
+    plan: free
+    rootDir: mock-pcn-site
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT

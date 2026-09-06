@@ -1,0 +1,2397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PCN Appeals & Payments — Demo</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='10' fill='%230b0c0c'/%3E%3Crect y='0' width='100' height='10' fill='%231d70b8'/%3E%3Ctext x='50' y='68' font-size='54' text-anchor='middle' fill='white'%3E%E2%9A%96%3C/text%3E%3C/svg%3E" />
+
+<style>
+  :root {
+    /* Colour palette inspired by the (openly reusable, MIT-licensed) GOV.UK
+       Design System — https://design-system.service.gov.uk/styles/colour/ —
+       chosen for accessibility (high contrast, a distinct focus state) and
+       because it reads as trustworthy/official-adjacent for a penalty/
+       appeals tool, without using any actual government branding (no
+       crown/coat-of-arms, no "GOV.UK" wordmark — see the footer notice).
+       This is NOT an official government service. */
+    --bg: #f3f2f1;             /* govuk page background (light grey) */
+    --card: #ffffff;
+    --border: #b1b4b6;         /* govuk mid grey */
+    --text: #0b0c0c;           /* govuk black */
+    --muted: #505a5f;          /* govuk secondary-text grey */
+    --primary: #1d70b8;        /* govuk blue — header, links, focus-adjacent accents */
+    --primary-dark: #003078;   /* govuk dark blue — hover state */
+    --primary-light: #d2e2f1;  /* light blue tint for panels/badges */
+    --link: #1a65a6;           /* govuk link blue */
+    --accent: #4c2c92;         /* govuk purple — used sparingly (appeal-submitted tag) */
+    --green: #0f7a52;          /* govuk green — default/primary button colour + success */
+    --green-dark: #0b5c3e;     /* hover shade */
+    --danger: #ca3535;         /* govuk red — errors/warnings */
+    --danger-dark: #96233a;
+    --success: #0f7a52;
+    --warning: #f47738;        /* govuk orange — pending/in-progress tags */
+    --focus: #ffdd00;          /* govuk's signature yellow focus outline */
+    --grey-btn: #f3f3f3;       /* govuk secondary-button background */
+    --grey-btn-border: #929191;
+    --radius: 4px;
+    --shadow-sm: 0 1px 2px rgba(11, 12, 12, 0.08);
+    --shadow-md: 0 4px 10px rgba(11, 12, 12, 0.08);
+    --shadow-lg: 0 10px 28px rgba(11, 12, 12, 0.16);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    /* GOV.UK's own recommendation for non-GOV.UK-branded services: don't
+       try to license/replicate their "GDS Transport" font — plain
+       Arial/Helvetica with a sans-serif fallback is the supported choice. */
+    font-family: arial, "Helvetica Neue", Helvetica, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+  a { color: var(--link); }
+  a:hover { color: var(--primary-dark); }
+  /* GOV.UK's signature accessible focus style: a solid yellow highlight
+     with a dark inset ring so it stays visible on any background colour —
+     applied to every interactive element, not just links/buttons. */
+  a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible,
+  select:focus-visible, [tabindex]:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 0;
+    box-shadow: inset 0 0 0 2px var(--text);
+  }
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes popIn {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  .fade-in { animation: fadeInUp 0.35s ease both; }
+
+  header {
+    background: var(--text); /* govuk-style black masthead */
+    border-bottom: 4px solid var(--primary);
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+  header .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  header .logo-mark {
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius);
+    background: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+  }
+  header h1 {
+    font-size: 18px;
+    margin: 0;
+    color: #ffffff;
+    font-weight: 700;
+    letter-spacing: 0.1px;
+  }
+  header .tagline {
+    font-size: 11px;
+    color: #b1b4b6;
+    margin-top: 1px;
+  }
+  header .user-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    color: #ffffff;
+  }
+  header .user-info #username-display {
+    background: rgba(255,255,255,0.14);
+    padding: 5px 12px;
+    border-radius: var(--radius);
+    font-weight: 600;
+    font-size: 13px;
+  }
+  header button.secondary {
+    color: #ffffff;
+    border-color: rgba(255,255,255,0.6);
+    background: transparent;
+  }
+  header button.secondary:hover { background: rgba(255,255,255,0.14); }
+  .service-banner {
+    background: var(--primary-light);
+    border-bottom: 1px solid var(--border);
+    padding: 6px 28px;
+    font-size: 12.5px;
+    color: var(--text);
+    text-align: center;
+  }
+  .service-banner strong { color: var(--primary-dark); }
+  .site-footer {
+    border-top: 1px solid var(--border);
+    background: #ffffff;
+    margin-top: 40px;
+    padding: 26px 16px 40px;
+  }
+  .site-footer-inner {
+    max-width: 1120px;
+    margin: 0 auto;
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .site-footer-inner strong { color: var(--text); }
+
+  main {
+    max-width: 1120px;
+    margin: 28px auto;
+    padding: 0 16px 60px;
+  }
+  .hidden { display: none !important; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-top: 4px solid var(--primary);
+    border-radius: var(--radius);
+    padding: 22px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow-sm);
+  }
+  .card h2 {
+    margin-top: 0;
+    font-size: 17px;
+    color: var(--text);
+  }
+  label {
+    display: block;
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 5px;
+    color: var(--text);
+  }
+  input[type="text"], input[type="password"], textarea, input[type="file"] {
+    width: 100%;
+    padding: 10px 12px;
+    border: 2px solid var(--text);
+    border-radius: 0;
+    font-size: 15px;
+    font-family: inherit;
+    margin-bottom: 14px;
+    background: #ffffff;
+    color: var(--text);
+  }
+  input[type="text"]:focus, input[type="password"]:focus, textarea:focus {
+    outline: 3px solid var(--focus);
+    outline-offset: 0;
+    box-shadow: inset 0 0 0 2px var(--text);
+  }
+  textarea { resize: vertical; min-height: 90px; }
+  button {
+    background: var(--green); /* govuk default-button green — the primary "go forward" action colour */
+    color: white;
+    border: 2px solid transparent;
+    border-bottom: 3px solid rgba(0,0,0,0.25);
+    padding: 10px 18px;
+    border-radius: var(--radius);
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.1s ease;
+  }
+  button:hover { background: var(--green-dark); }
+  button:active { border-bottom-width: 1px; margin-top: 2px; }
+  button.secondary {
+    background: var(--grey-btn);
+    color: var(--text);
+    border: 2px solid transparent;
+    border-bottom: 3px solid var(--grey-btn-border);
+  }
+  button.secondary:hover { background: #dbdbdb; }
+  button.danger { background: var(--danger); border-bottom-color: var(--danger-dark); }
+  button.danger:hover { background: #a82c2c; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .tabs { display: flex; gap: 8px; margin-bottom: 18px; background: #f0f2f7; padding: 5px; border-radius: 10px; }
+  .tabs button.tab {
+    flex: 1;
+    background: transparent;
+    color: var(--muted);
+    border: none;
+    box-shadow: none;
+    padding: 9px 16px;
+  }
+  .tabs button.tab:hover { transform: none; background: var(--primary-light); box-shadow: none; }
+  .tabs button.tab.active {
+    background: var(--card);
+    color: var(--primary-dark);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .layout { display: grid; grid-template-columns: 380px 1fr; gap: 20px; align-items: start; }
+  .layout > div { min-width: 0; }
+  @media (max-width: 850px) { .layout { grid-template-columns: 1fr; } }
+  @media (max-width: 600px) {
+    main { margin: 16px auto; padding: 0 10px 40px; }
+    .card { padding: 16px; }
+    header { padding: 12px 16px; flex-wrap: wrap; gap: 8px; }
+    .stepper .label { font-size: 9px; }
+  }
+
+  /* Grid of selectable cards (not a plain stacked list) — one card per
+     notice, responsive down to a single column on narrow screens. */
+  .notice-list {
+    list-style: none; padding: 0; margin: 0;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px;
+  }
+  .notice-list li {
+    padding: 14px 16px;
+    border: 1.5px solid var(--border);
+    border-left: 5px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    background: #fff;
+    transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .notice-list li:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  .notice-list li:hover { border-color: var(--primary); }
+  .notice-list li.selected { border-color: var(--primary); border-left-color: var(--primary); background: var(--primary-light); }
+  .notice-list li.status-paid, .notice-list li.status-resolved { border-left-color: var(--success); }
+  .notice-list li.status-appeal_drafted { border-left-color: var(--warning); }
+  .notice-list li.status-appeal_submitted { border-left-color: var(--accent); }
+  .notice-list .reg { font-weight: 700; }
+
+  /* Status tags — colour mapping follows the GOV.UK "Tag" component
+     convention (grey = inactive, blue = received/in progress, orange =
+     pending action, purple = sent, green = complete). */
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: var(--radius);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .badge.new { background: #f3f3f3; color: var(--muted); }
+  .badge.classified { background: var(--primary-light); color: var(--primary-dark); }
+  .badge.appeal_drafted { background: #fdf0e8; color: #a85a2a; }
+  .badge.appeal_submitted { background: #ece7f7; color: var(--accent); }
+  .badge.paid { background: #e3f3ec; color: var(--success); }
+  .badge.resolved { background: #e3f3ec; color: var(--success); }
+
+  /* Appealability pre-check — same GOV.UK tag colour convention as the
+     status badges above, applied to the verdict rather than the notice's
+     workflow status. See app/services/appealability_checker.py. */
+  .badge.verdict-worth_appealing { background: #e3f3ec; color: var(--success); }
+  .badge.verdict-review_recommended { background: #fff3da; color: var(--warning); }
+  .badge.verdict-deadline_likely_passed { background: #fbe9e9; color: var(--danger); }
+  .badge.verdict-no_procedural_issue_detected { background: var(--primary-light); color: var(--primary-dark); }
+  .badge.verdict-not_applicable { background: #f3f3f3; color: var(--muted); }
+
+  .appealability-panel { border: 1.5px solid var(--border); border-radius: var(--radius); padding: 14px 16px; margin: 4px 0 18px; }
+  .appealability-panel.verdict-worth_appealing { border-color: var(--success); background: #f5faf8; }
+  .appealability-panel.verdict-deadline_likely_passed { border-color: var(--danger); background: #fef8f8; }
+  .appealability-panel.verdict-review_recommended { border-color: var(--warning); background: #fffcf5; }
+  .appealability-panel.verdict-no_procedural_issue_detected,
+  .appealability-panel.verdict-not_applicable { border-color: var(--border); background: #fafafa; }
+  .appealability-panel h3 { margin: 0 0 8px; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .appealability-signal { font-size: 13px; padding: 8px 0; border-top: 1px solid rgba(0,0,0,0.06); }
+  .appealability-signal:first-of-type { border-top: none; }
+  .appealability-signal .sig-label { font-weight: 700; text-transform: uppercase; font-size: 10.5px; letter-spacing: 0.4px; margin-right: 6px; }
+  .appealability-signal.sig-high .sig-label { color: var(--danger); }
+  .appealability-signal.sig-medium .sig-label { color: var(--warning); }
+  .appealability-signal.sig-low .sig-label, .appealability-signal.sig-info .sig-label { color: var(--muted); }
+  .appealability-disclaimer { font-size: 11.5px; color: var(--muted); margin-top: 10px; }
+  .appealability-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.3px; margin-left: 6px; }
+
+  .field-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 10px; }
+  .field { font-size: 13px; }
+  .field .k { color: var(--muted); }
+  .field .v { font-weight: 600; }
+
+  .msg {
+    font-size: 13px; padding: 11px 14px; border-radius: 8px; margin-bottom: 14px;
+    animation: fadeInUp 0.25s ease both; overflow-wrap: anywhere; word-break: break-word;
+    line-height: 1.5;
+  }
+  /* Deliberately NOT display:flex here: this div's content is inline text
+     (possibly with an inline <code> or <span class="spinner">/.progress-dots
+     mixed in) meant to wrap as one flowing paragraph. A flex container
+     instead treats each direct child — including the anonymous text-node
+     flex item alongside any inline element like <code> — as its own
+     column, which breaks multi-line messages into ugly side-by-side
+     fragments instead of wrapping normally. The ::before icon below is a
+     pseudo-element, which renders inline-before the real content with no
+     such problem. */
+  .msg::before { font-weight: 700; margin-right: 7px; }
+  .msg.error { background: #fdecea; color: var(--danger); }
+  .msg.error::before { content: "✕"; }
+  .msg.success { background: #e2f7ee; color: var(--success); }
+  .msg.success::before { content: "✓"; }
+  .msg.info { background: #eef3ff; color: var(--primary-dark); }
+  .msg.info::before { content: "ℹ"; }
+  .msg.pending { background: #eef3ff; color: var(--primary-dark); }
+  .msg.pending::before { content: ""; }
+  .msg code { background: rgba(29,112,184,0.12); padding: 1px 5px; border-radius: 3px; font-size: 12px; word-break: break-all; white-space: normal; }
+  .msg .spinner { vertical-align: middle; margin-right: 2px; }
+  .msg .progress-dots { vertical-align: middle; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    border: 2px solid rgba(29, 112, 184, 0.22);
+    border-top-color: var(--primary);
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+  .progress-dots { display: inline-flex; gap: 4px; margin-left: 2px; }
+  .progress-dots span {
+    width: 4px; height: 4px; border-radius: 50%; background: var(--primary);
+    opacity: 0.3; animation: dotPulse 1.2s ease-in-out infinite;
+  }
+  .progress-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .progress-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes dotPulse { 0%, 80%, 100% { opacity: 0.25; } 40% { opacity: 1; } }
+
+  .empty-state { color: var(--muted); font-size: 13px; text-align: center; padding: 30px 10px; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 18px 0; }
+  .raw-text-preview {
+    background: #fafbfc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 12px;
+    color: var(--muted);
+    max-height: 120px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    margin-bottom: 14px;
+  }
+  .actions-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+  small.hint { display: block; color: var(--muted); margin-top: -8px; margin-bottom: 14px; }
+
+  /* ---------- stepper ---------- */
+  .stepper { display: flex; align-items: center; margin: 4px 0 20px; }
+  .stepper .step { display: flex; flex-direction: column; align-items: center; flex: 1; position: relative; }
+  .stepper .step .dot {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: #eef1f5; color: var(--muted);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; border: 2px solid var(--border);
+    transition: all 0.2s ease;
+  }
+  .stepper .step .label { font-size: 10.5px; color: var(--muted); margin-top: 6px; text-align: center; }
+  .stepper .step.done .dot { background: var(--success); border-color: var(--success); color: #fff; }
+  .stepper .step.done .label { color: var(--success); font-weight: 600; }
+  .stepper .step.active .dot { background: var(--primary); border-color: var(--primary); color: #fff; box-shadow: 0 0 0 4px rgba(29,112,184,0.16); }
+  .stepper .step.active .label { color: var(--primary-dark); font-weight: 700; }
+  .stepper .step:not(:last-child)::after {
+    content: ""; position: absolute; top: 13px; left: 50%; width: 100%; height: 2px;
+    background: var(--border); z-index: 0;
+  }
+  .stepper .step.done:not(:last-child)::after { background: var(--success); }
+
+  /* ---------- landing / pricing page ---------- */
+  #landing-view { animation: fadeIn 0.4s ease both; }
+  .hero {
+    text-align: center;
+    padding: 56px 16px 34px;
+  }
+  .hero h1 {
+    font-size: 34px;
+    margin: 0 0 12px;
+    color: var(--text);
+    font-weight: 800;
+  }
+  .hero h1 .accent { color: var(--primary); }
+  .hero p { font-size: 15px; color: var(--muted); max-width: 620px; margin: 0 auto; }
+
+  .audience-toggle {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin: 22px auto 34px;
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: 30px;
+    padding: 5px;
+    width: fit-content;
+    box-shadow: var(--shadow-sm);
+  }
+  .audience-toggle button {
+    background: transparent;
+    color: var(--muted);
+    box-shadow: none;
+    border-radius: 24px;
+    padding: 9px 20px;
+    font-size: 13px;
+  }
+  .audience-toggle button:hover { background: var(--primary-light); }
+  .audience-toggle button.active {
+    background: var(--primary);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(29,112,184,0.3);
+  }
+
+  .plan-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+    max-width: 1080px;
+    margin: 0 auto;
+  }
+  @media (max-width: 950px) { .plan-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .plan-grid { grid-template-columns: 1fr; } }
+
+  .plan-card {
+    background: #fff;
+    border: 1.5px solid var(--border);
+    border-radius: 16px;
+    padding: 24px 20px;
+    text-align: center;
+    position: relative;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    display: flex;
+    flex-direction: column;
+    animation: popIn 0.3s ease both;
+  }
+  .plan-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); border-color: var(--primary); }
+  .plan-card.featured { border-color: var(--accent); box-shadow: 0 10px 30px rgba(76, 44, 146, 0.16); }
+  .plan-ribbon {
+    position: absolute; top: -11px; left: 50%; transform: translateX(-50%);
+    background: var(--accent); color: #fff; font-size: 10.5px; font-weight: 700;
+    padding: 4px 14px; border-radius: var(--radius); letter-spacing: 0.3px; text-transform: uppercase;
+    box-shadow: 0 3px 8px rgba(76,44,146,0.35);
+  }
+  .plan-card .plan-name { font-size: 14px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 10px; }
+  .plan-card .plan-price { font-size: 32px; font-weight: 800; color: var(--text); }
+  .plan-card .plan-price small { font-size: 13px; font-weight: 600; color: var(--muted); }
+  .plan-card .plan-credits { font-size: 13px; color: var(--muted); margin: 6px 0 18px; }
+  .plan-card .plan-per-unit { font-size: 11px; color: var(--muted); margin-top: -12px; margin-bottom: 16px; }
+  .plan-card button { width: 100%; margin-top: auto; }
+  .plan-card.free button { background: #fff; color: var(--primary); border: 1.5px solid var(--primary); box-shadow: none; }
+
+  .selected-plan-banner {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    background: var(--primary-light); color: var(--primary-dark);
+    border: 1px solid #c9d9ff; border-radius: 10px; padding: 10px 14px; font-size: 13px; margin-bottom: 16px;
+  }
+  .selected-plan-banner button.link {
+    background: none; box-shadow: none; color: var(--primary-dark); text-decoration: underline;
+    padding: 0; font-size: 12px; font-weight: 600;
+  }
+  .selected-plan-banner button.link:hover { transform: none; }
+
+  .back-link {
+    display: inline-block; margin-bottom: 14px; font-size: 13px; color: var(--muted);
+    cursor: pointer; text-decoration: none;
+  }
+  .back-link:hover { color: var(--primary); }
+
+  .landing-footer { text-align: center; margin: 36px 0 10px; font-size: 13px; color: var(--muted); }
+  .landing-footer a { color: var(--primary); font-weight: 600; cursor: pointer; text-decoration: none; }
+  .landing-footer a:hover { text-decoration: underline; }
+
+  .trust-strip {
+    display: flex; justify-content: center; gap: 26px; flex-wrap: wrap;
+    margin: 30px auto 0; max-width: 800px; font-size: 12px; color: var(--muted);
+  }
+  .trust-strip span { display: flex; align-items: center; gap: 6px; }
+
+  /* in-app plan chips (dashboard credits card) */
+  .plan-chip-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  @media (max-width: 480px) { .plan-chip-grid { grid-template-columns: 1fr; } }
+  .plan-chip {
+    text-align: left; background: #fff; border: 1.5px solid var(--border); color: var(--text);
+    box-shadow: none; padding: 10px 12px; border-radius: 9px; font-size: 12.5px; font-weight: 600;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .plan-chip:hover { border-color: var(--primary); background: var(--primary-light); }
+  .plan-chip .chip-price { color: var(--primary-dark); font-size: 14px; font-weight: 800; }
+  .plan-chip .chip-sub { color: var(--muted); font-weight: 500; font-size: 11px; }
+
+  /* ---------- purchase history ---------- */
+  .purchase-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 12.5px; gap: 10px;
+  }
+  .purchase-row:last-child { border-bottom: none; }
+  .purchase-plan { font-weight: 700; }
+  .purchase-date { color: var(--muted); font-size: 11px; }
+  .purchase-amount { font-weight: 700; color: var(--primary-dark); white-space: nowrap; }
+  .badge.purchase-completed { background: #e2f7ee; color: var(--success); }
+  .badge.purchase-pending { background: #fff3da; color: var(--warning); }
+
+  /* ---------- appeal-reason quick-select chips ---------- */
+  .chip-row { display: flex; flex-wrap: wrap; gap: 6px; margin: -4px 0 12px; }
+  .reason-chip {
+    background: #fff; color: var(--text); border: 1.5px solid var(--border); box-shadow: none;
+    padding: 6px 12px; border-radius: 20px; font-size: 11.5px; font-weight: 600;
+  }
+  .reason-chip:hover { border-color: var(--primary); background: var(--primary-light); transform: none; box-shadow: none; }
+  .reason-chip.active { background: var(--primary); color: #fff; border-color: transparent; }
+
+  /* ---------- simulated-payment modal (kept visually + structurally
+     separate from the real Stripe credits panel, so the two payment
+     surfaces — one real, one a labelled demo — are never confusable) ---------- */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 300; padding: 20px; animation: fadeIn 0.2s ease both;
+  }
+  .modal {
+    background: #fff; border-radius: 16px; width: 100%; max-width: 440px;
+    max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-lg);
+    animation: popIn 0.22s ease both;
+  }
+  .modal-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    padding: 20px 22px 0; gap: 10px;
+  }
+  .modal-header h2 { margin: 0; font-size: 16px; }
+  .modal-close {
+    background: none; box-shadow: none; color: var(--muted); font-size: 20px;
+    line-height: 1; padding: 4px 10px; border-radius: 8px; flex-shrink: 0;
+  }
+  .modal-close:hover { background: var(--primary-light); color: var(--primary); transform: none; box-shadow: none; }
+  .modal-body { padding: 14px 22px 22px; }
+  .sim-badge {
+    display: inline-block; background: #fff3da; color: var(--warning);
+    font-size: 10.5px; font-weight: 700; padding: 4px 10px; border-radius: 20px;
+    margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.3px;
+  }
+  .real-badge {
+    display: inline-block; background: #e2f7ee; color: var(--success);
+    font-size: 10.5px; font-weight: 700; padding: 4px 10px; border-radius: 20px;
+    margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.3px;
+  }
+  .pay-option-block { padding: 14px 0; }
+  .pay-option-title { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+  .pay-option-desc { font-size: 12px; color: var(--muted); margin: 0 0 10px; }
+  .batch-appeal-draft-card {
+    border: 1px solid var(--border); border-radius: 10px; padding: 12px;
+    margin-bottom: 12px; background: #fafbfc;
+  }
+  .batch-appeal-draft-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 8px; font-size: 13px; flex-wrap: wrap; gap: 6px;
+  }
+  .batch-appeal-draft-card textarea { width: 100%; font-family: inherit; font-size: 13px; }
+  @media (max-width: 480px) {
+    .modal { max-width: 100%; border-radius: 14px; }
+    .modal-header, .modal-body { padding-left: 16px; padding-right: 16px; }
+  }
+
+  /* ---------- header credits pill ---------- */
+  .credits-nav-btn {
+    display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 13px;
+  }
+
+  /* ---------- home / dashboard (upload-centred) ---------- */
+  .home-upload-card { max-width: 560px; margin: 8px auto 28px; }
+  .home-upload-card h2 { text-align: center; }
+  .stat-row {
+    display: flex; gap: 16px; max-width: 560px; margin: 0 auto 8px; flex-wrap: wrap;
+  }
+  @media (max-width: 480px) { .stat-row { flex-direction: column; } }
+  .stat-card {
+    flex: 1; min-width: 180px; background: #fff; border: 1.5px solid var(--border);
+    border-radius: 12px; padding: 20px; text-align: center; cursor: pointer;
+    box-shadow: var(--shadow-sm); transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    font-family: inherit;
+  }
+  .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--primary); }
+  .stat-icon { font-size: 26px; margin-bottom: 6px; }
+  .stat-value { font-size: 26px; font-weight: 800; color: var(--text); }
+  .stat-label { font-size: 12.5px; color: var(--muted); margin-bottom: 8px; }
+  .stat-cta { font-size: 12px; font-weight: 700; color: var(--primary); }
+
+  /* ---------- sticky selection bar (notices page) ---------- */
+  .selection-bar {
+    position: sticky; bottom: 12px; background: #fff; border: 1.5px solid var(--primary);
+    border-radius: 12px; box-shadow: var(--shadow-lg); padding: 14px 20px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    z-index: 15; flex-wrap: wrap; margin-top: 16px;
+  }
+  .selection-bar-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  /* ---------- one-by-one review page (appeals & payments) ---------- */
+  .review-layout { display: grid; grid-template-columns: 260px 1fr; gap: 20px; align-items: start; }
+  @media (max-width: 850px) { .review-layout { grid-template-columns: 1fr; } }
+  .review-rail-card { max-height: 640px; overflow-y: auto; }
+  .review-rail-item {
+    padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px;
+    margin-bottom: 8px; cursor: pointer; font-size: 13px;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .review-rail-item:last-child { margin-bottom: 0; }
+  .review-rail-item:hover { border-color: var(--primary); }
+  .review-rail-item.active { border-color: var(--primary); background: var(--primary-light); }
+  .review-rail-item .rail-reg { font-weight: 700; }
+  .review-rail-item .rail-status { font-size: 11px; color: var(--muted); margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="logo-mark">⚖</div>
+    <div>
+      <h1>PCN Appeals &amp; Payments</h1>
+      <div class="tagline">AI-assisted penalty management — demo build</div>
+    </div>
+  </div>
+  <div class="user-info hidden" id="user-info">
+    <button type="button" class="secondary credits-nav-btn" id="credits-nav-btn">💳 <span id="credits-nav-count">–</span> credits</button>
+    <span id="username-display"></span>
+    <button class="secondary" id="logout-btn">Log out</button>
+  </div>
+</header>
+<div class="service-banner">
+  This is an <strong>independent, unofficial tool</strong> — not affiliated with GOV.UK, the DVLA, or any council or parking operator.
+</div>
+
+<main>
+
+  <!-- ===================== LANDING / PACKAGE-SELECTION VIEW ===================== -->
+  <section id="landing-view">
+    <div class="hero">
+      <h1>Upload it. <span class="accent">Appeal it.</span> Or pay it. In one place.</h1>
+      <p id="hero-subtitle">Whether you're an individual driver or a business managing a fleet, pick a plan below to get started — every account also includes 5 free PCN credits, no card required.</p>
+    </div>
+
+    <div class="audience-toggle">
+      <button type="button" class="active" data-audience="individual" id="audience-individual">Individual driver</button>
+      <button type="button" data-audience="business" id="audience-business">Business / fleet</button>
+    </div>
+
+    <div class="plan-grid" id="landing-plan-grid">
+      <!-- populated by JS: free tier + live plans from /billing/plans -->
+    </div>
+
+    <div class="trust-strip">
+      <span>🔒 Real Stripe checkout (test mode)</span>
+      <span>🧾 Card details never touch our servers</span>
+      <span>↩ Credit packs never expire</span>
+    </div>
+
+    <div class="landing-footer">
+      Already have an account? <a id="landing-login-link">Log in</a>
+    </div>
+  </section>
+
+  <!-- ===================== AUTH VIEW ===================== -->
+  <section id="auth-view" class="hidden">
+    <div class="card fade-in" style="max-width: 420px; margin: 40px auto;">
+      <a class="back-link" id="back-to-landing-link">&larr; Back to plans</a>
+
+      <div id="selected-plan-banner" class="selected-plan-banner hidden">
+        <span id="selected-plan-text"></span>
+        <button type="button" class="link" id="change-plan-link">Change</button>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="login" id="tab-login">Log in</button>
+        <button class="tab" data-tab="register" id="tab-register">Register</button>
+      </div>
+
+      <div id="auth-msg"></div>
+
+      <form id="login-form">
+        <label for="login-username">Username</label>
+        <input type="text" id="login-username" required />
+        <label for="login-password">Password</label>
+        <input type="password" id="login-password" required />
+        <button type="submit">Log in</button>
+      </form>
+
+      <form id="register-form" class="hidden">
+        <label for="register-username">Username</label>
+        <input type="text" id="register-username" required minlength="3" />
+        <label for="register-password">Password</label>
+        <input type="password" id="register-password" required minlength="8" />
+        <small class="hint">At least 8 characters.</small>
+        <button type="submit">Create account</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- ===================== APP VIEW (post-login) ===================== -->
+  <section id="app-view" class="hidden">
+
+    <!-- ---- HOME: upload-centred dashboard ---- -->
+    <div class="app-page" id="page-home">
+      <div class="card fade-in home-upload-card">
+        <h2>Upload a PCN</h2>
+        <div id="upload-msg"></div>
+        <form id="upload-form">
+          <label for="pdf-file">PDF file(s)</label>
+          <input type="file" id="pdf-file" accept="application/pdf" multiple required />
+          <small class="hint">Select more than one to upload and classify them all at once.</small>
+          <button type="submit" id="upload-btn">Upload &amp; extract</button>
+        </form>
+
+        <hr class="divider" />
+
+        <details>
+          <summary style="cursor:pointer; font-size:13px; color:var(--muted);">Or paste notice text instead</summary>
+          <form id="paste-form" style="margin-top:12px;">
+            <textarea id="paste-text" placeholder="Paste the PCN text here..."></textarea>
+            <button type="submit">Submit text</button>
+          </form>
+        </details>
+      </div>
+
+      <div class="stat-row">
+        <button type="button" class="stat-card" id="home-credits-card">
+          <div class="stat-icon">💳</div>
+          <div class="stat-value" id="home-credits-value">–</div>
+          <div class="stat-label">PCN credits remaining</div>
+          <div class="stat-cta">Manage credits &amp; plans →</div>
+        </button>
+        <button type="button" class="stat-card" id="home-notices-card">
+          <div class="stat-icon">📄</div>
+          <div class="stat-value" id="home-notices-value">0</div>
+          <div class="stat-label">notices uploaded</div>
+          <div class="stat-cta" id="home-notices-cta">View my notices →</div>
+        </button>
+      </div>
+    </div>
+
+    <!-- ---- CREDITS & PLANS (moved off the dashboard, reached via the header pill) ---- -->
+    <div class="app-page hidden" id="page-credits">
+      <a class="back-link" id="back-to-home-from-credits">&larr; Back to dashboard</a>
+      <div class="card fade-in">
+        <h2>Your PCN credits</h2>
+        <div id="credits-msg"></div>
+        <p style="font-size:13px; margin-top:-6px;">
+          Credits remaining: <strong id="credits-remaining">–</strong>
+        </p>
+        <div id="plans-list" class="plan-chip-grid"></div>
+        <small class="hint">
+          Every account starts with 5 free credits (once). 1 credit = 1 PCN processed — paste, single
+          upload, or one file within a batch. Packs are one-time purchases and never expire. Checkout is
+          real Stripe (test mode) — card details go straight to Stripe's own page, never through this app.
+        </small>
+        <details id="purchase-history-details">
+          <summary style="cursor:pointer; font-size:12.5px; color:var(--muted);">Purchase history</summary>
+          <div id="purchase-history" style="margin-top:10px;"></div>
+        </details>
+      </div>
+    </div>
+
+    <!-- ---- NOTICES: select several to appeal or pay together ---- -->
+    <div class="app-page hidden" id="page-notices">
+      <a class="back-link" id="back-to-home-from-notices">&larr; Back to dashboard</a>
+      <div class="card fade-in">
+        <h2>Your notices</h2>
+        <small class="hint" style="margin-top:-8px;">Tick any notices below to appeal or pay several together, or click one to view and manage it on its own.</small>
+        <ul class="notice-list" id="notice-list"></ul>
+        <div class="empty-state hidden" id="notice-list-empty">No notices yet — upload one to get started.</div>
+      </div>
+    </div>
+
+    <div class="selection-bar hidden" id="selection-bar">
+      <div id="selection-bar-summary">No notices selected.</div>
+      <div class="selection-bar-actions">
+        <button class="secondary" id="open-batch-appeal-btn" type="button" disabled>Appeal selected →</button>
+        <button class="secondary" id="open-batch-pay-btn" type="button" disabled>Pay selected →</button>
+      </div>
+    </div>
+
+    <!-- ---- SINGLE NOTICE: detail + appeal + payment (unchanged functionality, now its own page) ---- -->
+    <div class="app-page hidden" id="page-notice-detail">
+      <a class="back-link" id="back-to-notices-from-detail">&larr; Back to notices</a>
+      <div class="card fade-in" id="detail-card">
+          <h2>Notice detail</h2>
+          <div id="detail-msg"></div>
+
+          <div class="stepper" id="detail-stepper">
+            <div class="step" data-step="0"><div class="dot">1</div><div class="label">Classified</div></div>
+            <div class="step" data-step="1"><div class="dot">2</div><div class="label">Appeal drafted</div></div>
+            <div class="step" data-step="2"><div class="dot">3</div><div class="label">Submitted / paid</div></div>
+            <div class="step" data-step="3"><div class="dot">4</div><div class="label">Resolved</div></div>
+          </div>
+
+          <div class="field-row">
+            <div class="field"><span class="k">Type: </span><span class="v" id="d-type"></span></div>
+            <div class="field"><span class="k">Vehicle: </span><span class="v" id="d-reg"></span></div>
+            <div class="field"><span class="k">Amount: </span><span class="v" id="d-amount"></span></div>
+            <div class="field"><span class="k">Status: </span><span class="badge" id="d-status"></span></div>
+          </div>
+          <div class="field-row">
+            <div class="field"><span class="k">Issued by: </span><span class="v" id="d-authority"></span></div>
+            <div class="field"><span class="k">Notice date: </span><span class="v" id="d-issue-date"></span></div>
+            <div class="field"><span class="k">Appeal deadline: </span><span class="v" id="d-deadline-date"></span></div>
+          </div>
+          <div class="field-row">
+            <div class="field"><span class="k">PCN / reference no.: </span><span class="v" id="d-reference"></span></div>
+          </div>
+          <small class="hint" style="margin-top:-6px;">Deadline is estimated (28 days from the notice date). All fields above are auto-detected (OCR, for a scanned PDF) — always
+            <a href="#" id="verify-raw-text-link" style="white-space:nowrap;">check the extracted text below</a> against the original notice before relying on any of them, especially the vehicle plate and reference number.</small>
+          <div id="d-authority-links" class="hidden" style="font-size:12px; margin:-6px 0 14px;"></div>
+          <div class="raw-text-preview" id="d-raw-text"></div>
+
+          <hr class="divider" />
+
+          <h2>Is this appealable?</h2>
+          <small class="hint" style="margin-top:-8px; display:block;">An automatic first read of what's printed on this notice — checked before you write anything below, and independent of your own reason for appealing.</small>
+          <div id="appealability-panel"></div>
+
+          <hr class="divider" />
+
+          <h2>Draft an appeal</h2>
+          <label>Common grounds (optional — click to pre-fill, then edit freely)</label>
+          <div class="chip-row" id="appeal-reason-chips">
+            <button type="button" class="reason-chip" data-reason="I had a valid permit / pay-and-display ticket clearly displayed at the time.">Valid permit displayed</button>
+            <button type="button" class="reason-chip" data-reason="The signage at this location was missing, unclear, or obscured, so the restriction was not reasonably visible.">Unclear signage</button>
+            <button type="button" class="reason-chip" data-reason="My vehicle had broken down and could not safely be moved at the time.">Vehicle broke down</button>
+            <button type="button" class="reason-chip" data-reason="I was not the driver of the vehicle at the time of the alleged contravention.">Not the driver</button>
+            <button type="button" class="reason-chip" data-reason="I was loading or unloading goods at the time, which I believe is a permitted activity at this location.">Loading / unloading</button>
+            <button type="button" class="reason-chip" data-reason="The notice appears to contain a factual error (e.g. vehicle registration, date, or location).">Notice has an error</button>
+          </div>
+          <label for="appeal-reason">Why are you appealing? (in your own words)</label>
+          <textarea id="appeal-reason" placeholder="e.g. I had a valid resident's permit displayed at the time..."></textarea>
+          <button id="draft-btn">Generate appeal draft</button>
+
+          <div id="draft-section" class="hidden">
+            <label for="appeal-draft-text" style="margin-top:14px;">AI-drafted letter (edit as needed before approving)</label>
+            <textarea id="appeal-draft-text" style="min-height:180px;"></textarea>
+            <div class="actions-row">
+              <button id="approve-btn">Approve appeal</button>
+              <button class="secondary" id="copy-letter-btn" type="button">Copy letter</button>
+              <button class="secondary" id="download-letter-btn" type="button">Download as .txt</button>
+              <button class="secondary" id="download-letter-pdf-btn" type="button">Download as PDF</button>
+            </div>
+            <small class="hint">Want to submit this yourself, on the real provider's actual website, instead of (or as well as) the sandbox bot below? Copy or download the letter here, then use the link in "Issued by" above to go to the real site.</small>
+          </div>
+
+          <div id="submit-section" class="hidden">
+            <p style="font-size:12px; color:var(--muted); margin:14px 0 0;">
+              Approved. Two ways to actually submit it from here:
+            </p>
+            <div class="actions-row">
+              <button class="secondary" id="submit-bot-btn">Submit via AI bot (sandbox site)</button>
+              <button class="secondary" id="copy-letter-btn-2" type="button">Copy final letter</button>
+              <button class="secondary" id="download-letter-btn-2" type="button">Download as .txt</button>
+              <button class="secondary" id="download-letter-pdf-btn-2" type="button">Download as PDF</button>
+            </div>
+            <small class="hint">
+              The AI bot submits to our sandbox site only — a safe stand-in for a real provider's portal, not the real
+              thing (see the README for why). To actually appeal your real PCN, copy/download the approved letter
+              above and submit it yourself via the real link next to "Issued by".
+            </small>
+          </div>
+
+          <hr class="divider" />
+
+          <h2>Or pay instead</h2>
+          <p style="font-size:12px; color:var(--muted); margin-top:-6px;" id="pay-instead-hint">
+            Simulated payment for demo purposes — no real transaction occurs, no card details are collected.
+          </p>
+          <button class="secondary" id="pay-btn">Pay (simulated)</button>
+      </div>
+    </div>
+
+    <!-- ---- REVIEW: select several notices -> left rail -> review/act one by one ---- -->
+    <!-- Replaces the old pop-up modals for both batch flows — a full page reads
+         less cramped than stacking every letter/option inside one small overlay,
+         and a left-hand rail makes it obvious which notice you're looking at and
+         how many are left. Used for BOTH "Appeal selected" and "Pay selected". -->
+    <div class="app-page hidden" id="page-review">
+      <a class="back-link" id="review-back-link">&larr; Back to notices</a>
+      <h2 id="review-title">Review selected notices</h2>
+      <p class="hint" id="review-subtitle" style="margin-top:-8px;"></p>
+
+      <div class="review-layout">
+        <div class="card review-rail-card">
+          <div id="review-rail"></div>
+        </div>
+        <div class="card review-main-card">
+          <div id="review-main"></div>
+        </div>
+      </div>
+
+      <!-- Appeal-mode action card: only shown once AI drafts have been generated -->
+      <div class="card fade-in hidden" id="review-appeal-submit-card">
+        <div id="review-appeal-submit-msg"></div>
+        <button id="review-submit-all-btn">Submit all appeals</button>
+      </div>
+
+      <!-- Pay-mode action card: same two options as before, now acting on the
+           whole reviewed set together rather than inside a small modal. -->
+      <div class="card fade-in hidden" id="review-pay-card">
+        <p style="font-size:12px; color:var(--muted); margin-top:-4px;">
+          Neither option below ever sends money to the actual issuing authority — the real parking charge
+          stays owed to them directly. Choose one:
+        </p>
+
+        <div class="pay-option-block">
+          <div class="sim-badge">Option A — Simulated, no real money</div>
+          <div class="pay-option-desc">Marks the selected notices as paid in this demo. No real transaction, no card details collected — type anything below or leave it blank.</div>
+          <div id="batch-pay-summary" style="font-size:13px; margin-bottom:10px;">No notices selected.</div>
+          <label for="mock-card-number">Card number (mock — not real)</label>
+          <input type="text" id="mock-card-number" value="4242 4242 4242 4242" />
+          <div style="display:flex; gap:12px;">
+            <div style="flex:1;">
+              <label for="mock-card-expiry">Expiry (mock)</label>
+              <input type="text" id="mock-card-expiry" value="12/29" />
+            </div>
+            <div style="flex:1;">
+              <label for="mock-card-cvc">CVC (mock)</label>
+              <input type="text" id="mock-card-cvc" value="123" />
+            </div>
+          </div>
+          <div id="batch-pay-msg"></div>
+          <button class="secondary" id="batch-pay-btn">Mark as paid (simulated)</button>
+        </div>
+
+        <hr class="divider" />
+
+        <div class="pay-option-block">
+          <div class="real-badge">Option B — Real Stripe checkout (test mode)</div>
+          <div class="pay-option-desc">
+            Charges a real, small flat handling fee (£<span id="pcn-fee-rate"></span> per notice) via an actual
+            Stripe Checkout session — for this platform's own processing of these PCNs (review, appeal drafting,
+            tracking), not the parking charge itself. Use any
+            <a href="https://stripe.com/docs/testing" target="_blank" rel="noopener">Stripe test card</a>
+            (e.g. 4242 4242 4242 4242) on Stripe's own page — no card details are ever entered here.
+          </div>
+          <div id="pcn-stripe-summary" style="font-size:13px; font-weight:600; margin-bottom:10px;"></div>
+          <div id="pcn-stripe-msg"></div>
+          <button id="pcn-stripe-checkout-btn">Pay facilitation fee via Stripe (test mode)</button>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="site-footer-inner">
+    <p>
+      <strong>PCN Appeals &amp; Payments</strong> is an independent student project (final-year MSc build) and is
+      <strong>not an official government service</strong> — it is not affiliated with, endorsed by, or connected to
+      GOV.UK, the DVLA, His Majesty's Government, or any local authority or private parking operator. Any appeal
+      generated here is a draft only; the "submit" action in this demo goes to a sandboxed test site, never a real
+      council or provider. Always check a real penalty notice's own instructions before relying on anything shown
+      here.
+    </p>
+  </div>
+</footer>
+
+<!-- Vendored locally (not loaded from a CDN) so the "download appeal as
+     PDF" feature works even on campus/venue wifi that blocks third-party
+     script CDNs, and so the demo never depends on an external service
+     being up at exactly the wrong moment. -->
+<script src="/static/vendor/jspdf.umd.min.js"></script>
+<script>
+const API_BASE = ""; // same-origin — served by FastAPI itself
+
+// ---------- state ----------
+let token = localStorage.getItem("pcn_token") || null;
+let username = localStorage.getItem("pcn_username") || null;
+let notices = [];
+let selectedNoticeId = null;
+let currentAppealId = null;
+let currentNotice = null; // full notice object for the currently-selected notice, kept around for the copy/download-letter helpers
+let selectedNotices = new Set(); // notice ids ticked via the shared checkboxes on the notices page — drives the sticky selection bar and both review-page flows below
+
+// ---------- one-by-one review page state (appeals & payments) ----------
+let reviewMode = null; // "appeal" | "pay"
+let reviewNotices = []; // snapshot of the selected notices, fixed for the duration of one review session
+let reviewIndex = 0; // which reviewNotices entry the main panel currently shows
+let reviewDrafts = []; // appeal mode only: [{notice, appealId, draftText, status, error, submissionRef}]
+let reviewDraftsGenerated = false; // appeal mode: false = still on the shared-reason step, true = per-notice review step
+
+// Must match app/services/billing_plans.py's PCN_FACILITATION_FEE_GBP_PER_NOTICE —
+// duplicated here only for display before the real total comes back from
+// POST /billing/checkout-pcns; the backend is always the actual source of
+// truth for what gets charged.
+const PCN_FACILITATION_FEE_GBP_PER_NOTICE = 1.50;
+
+// Plan the visitor picked on the pre-login landing page, carried through
+// register -> login so that a paid selection can jump straight into Stripe
+// Checkout right after the very next successful login. "free" (or null)
+// means no auto-checkout should happen.
+let pendingPlanId = null;
+let audienceMode = "individual";
+
+const FREE_PLAN = { plan_id: "free", name: "Free tier", credits: 5, price_gbp: 0 };
+
+// ---------- helpers ----------
+function el(id) { return document.getElementById(id); }
+
+// ---------- app-view page navigation ----------
+// Post-login navigation is a small set of full pages (home/credits/notices/
+// notice-detail/review) rather than one big two-column dashboard — the
+// credits & plans panel moved off the dashboard entirely (reached via the
+// header pill instead), and "upload a PCN" is the only thing on the home
+// page so it reads as the one obvious first action for a new user.
+const APP_PAGES = ["home", "credits", "notices", "notice-detail", "review"];
+function showPage(name) {
+  APP_PAGES.forEach((p) => el(`page-${p}`).classList.toggle("hidden", p !== name));
+  el("selection-bar").classList.toggle("hidden", !(name === "notices" && selectedNotices.size > 0));
+  window.scrollTo(0, 0);
+}
+
+function showMsg(containerId, text, type) {
+  const c = el(containerId);
+  c.innerHTML = `<div class="msg ${type}">${text}</div>`;
+}
+function clearMsg(containerId) { el(containerId).innerHTML = ""; }
+
+async function api(path, options = {}) {
+  const headers = options.headers || {};
+  const hadToken = !!token; // only a 401 on an authenticated call counts as "session expired" below —
+                            // a 401 from e.g. a bad login attempt is a normal, expected failure, not this.
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const res = await fetch(API_BASE + path, { ...options, headers });
+  let body = null;
+  try { body = await res.json(); } catch (e) { /* no body */ }
+  if (!res.ok) {
+    if (res.status === 401 && hadToken) handleSessionExpired();
+    const detail = body && body.detail ? body.detail : res.statusText;
+    throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+  }
+  return body;
+}
+
+// A stored token can go stale (backend restarted with a fresh JWT secret,
+// the database was reset, or the token simply expired) — every endpoint
+// then returns 401 "Could not validate credentials" for EVERY call, which
+// used to just scatter that same cryptic message across every panel
+// (notices, credits, etc.) with no clear next step. Instead, the first 401
+// on an authenticated call now cleanly bounces the user back to a real
+// login screen with one clear explanation, rather than leaving the
+// dashboard half-populated with "?" placeholders and per-panel errors.
+let sessionExpiredHandled = false;
+function handleSessionExpired() {
+  if (sessionExpiredHandled) return; // several panels can 401 in the same instant — only act once
+  sessionExpiredHandled = true;
+  token = null;
+  username = null;
+  localStorage.removeItem("pcn_token");
+  localStorage.removeItem("pcn_username");
+  el("app-view").classList.add("hidden");
+  el("user-info").classList.add("hidden");
+  el("landing-view").classList.add("hidden");
+  el("auth-view").classList.remove("hidden");
+  switchTab("login");
+  showMsg("auth-msg", "Your session has expired or is no longer valid — please log in again.", "error");
+}
+
+function fmtStatus(status) {
+  return status.replace(/_/g, " ");
+}
+
+function fmtDate(isoString) {
+  if (!isoString) return "not detected";
+  const d = new Date(isoString);
+  if (isNaN(d.getTime())) return "not detected";
+  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+// Escapes text before it's inserted into innerHTML elsewhere in this file
+// (notice fields, appeal letters — all user/LLM/OCR-derived, none of it
+// should be treated as trusted markup).
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str == null ? "" : String(str);
+  return div.innerHTML;
+}
+
+function renderAuthorityLinks(notice) {
+  const box = el("d-authority-links");
+  const links = [];
+  if (notice.issuing_authority_website) {
+    links.push(`<a href="${escapeHtml(notice.issuing_authority_website)}" target="_blank" rel="noopener noreferrer">Provider's website ↗</a>`);
+  }
+  if (notice.issuing_authority_appeal_url) {
+    links.push(`<a href="${escapeHtml(notice.issuing_authority_appeal_url)}" target="_blank" rel="noopener noreferrer">Find their appeal page ↗</a>`);
+  }
+  if (notice.issuing_authority_verify_url) {
+    links.push(`<a href="${escapeHtml(notice.issuing_authority_verify_url)}" target="_blank" rel="noopener noreferrer">Verify these details on their site ↗</a>`);
+  }
+  if (links.length) {
+    box.innerHTML = links.join(" &nbsp;•&nbsp; ");
+    box.classList.remove("hidden");
+  } else {
+    box.innerHTML = "";
+    box.classList.add("hidden");
+  }
+}
+
+// Maps a notice's server-side status onto the 4-stage visual stepper in the
+// detail card. Purely cosmetic — doesn't affect any request logic below.
+const STEP_INDEX = {
+  new: 0,
+  classified: 0,
+  appeal_drafted: 1,
+  appeal_submitted: 2,
+  paid: 2,
+  resolved: 3,
+};
+function renderStepper(status) {
+  const current = STEP_INDEX[status] ?? 0;
+  document.querySelectorAll("#detail-stepper .step").forEach((stepEl) => {
+    const idx = Number(stepEl.dataset.step);
+    stepEl.classList.toggle("done", idx < current || (idx === current && status === "resolved"));
+    stepEl.classList.toggle("active", idx === current && status !== "resolved");
+  });
+}
+
+// ---------- copy / download the appeal letter ----------
+// Lets a user take the AI-drafted (or approved/edited) letter and submit
+// it themselves on the real provider's actual website — this platform's
+// bot only ever submits to the sandbox site, on purpose (see README), so
+// this is the safe way to actually use the drafted letter on a real PCN.
+async function copyLetterToClipboard(text, btn) {
+  const original = btn.textContent;
+  try {
+    await navigator.clipboard.writeText(text);
+    btn.textContent = "Copied!";
+  } catch (err) {
+    btn.textContent = "Copy failed — select & copy manually";
+  } finally {
+    setTimeout(() => { btn.textContent = original; }, 2000);
+  }
+}
+
+function downloadLetterAsText(text, notice) {
+  const reg = (notice && notice.vehicle_registration ? notice.vehicle_registration : "appeal").replace(/\s+/g, "");
+  const blob = new Blob([text], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `appeal-letter-${reg}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+// A proper PDF alongside the plain .txt download — a small but genuinely
+// real extra (client-side PDF generation via jsPDF, loaded from cdnjs),
+// useful since a printable/emailable PDF reads more like a real letter a
+// user would actually post or attach than a raw .txt file would.
+function downloadLetterAsPDF(text, notice) {
+  if (!window.jspdf || !window.jspdf.jsPDF) {
+    showMsg("detail-msg", "PDF library didn't load (no internet access?) — use \"Download as .txt\" instead.", "error");
+    return;
+  }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  const margin = 56;
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const maxWidth = pageWidth - margin * 2;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
+
+  const paragraphs = String(text || "").split(/\n/);
+  let y = margin;
+  const lineHeight = 15;
+  paragraphs.forEach((para) => {
+    const lines = para.length ? doc.splitTextToSize(para, maxWidth) : [""];
+    lines.forEach((line) => {
+      if (y > pageHeight - margin) { doc.addPage(); y = margin; }
+      doc.text(line, margin, y);
+      y += lineHeight;
+    });
+  });
+
+  const reg = (notice && notice.vehicle_registration ? notice.vehicle_registration : "appeal").replace(/\s+/g, "");
+  doc.save(`appeal-letter-${reg}.pdf`);
+}
+
+// ============================================================
+// ---------- landing / package-selection page ----------
+// ============================================================
+
+el("audience-individual").addEventListener("click", () => setAudience("individual"));
+el("audience-business").addEventListener("click", () => setAudience("business"));
+
+function setAudience(mode) {
+  audienceMode = mode;
+  el("audience-individual").classList.toggle("active", mode === "individual");
+  el("audience-business").classList.toggle("active", mode === "business");
+  el("hero-subtitle").textContent = mode === "business"
+    ? "Managing PCNs for a fleet or team? Pick a credit pack sized for your volume — every account also includes 5 free PCN credits, no card required."
+    : "Whether you're an individual driver or a business managing a fleet, pick a plan below to get started — every account also includes 5 free PCN credits, no card required.";
+  renderLandingPlans();
+}
+
+let landingPaidPlans = [];
+
+async function loadLandingPlans() {
+  try {
+    landingPaidPlans = await api("/billing/plans");
+  } catch (err) {
+    // Pre-login plan browsing shouldn't hard-fail the page if this call
+    // has a problem — fall back to the known catalog (billing_plans.py)
+    // so the landing page still renders something sensible.
+    landingPaidPlans = [
+      { plan_id: "starter_10", name: "Starter Pack", credits: 10, price_gbp: 4.99 },
+      { plan_id: "growth_20", name: "Growth Pack", credits: 20, price_gbp: 8.99 },
+      { plan_id: "bulk_50", name: "Bulk Pack", credits: 50, price_gbp: 17.99 },
+    ];
+  }
+  renderLandingPlans();
+}
+
+function renderLandingPlans() {
+  const grid = el("landing-plan-grid");
+  grid.innerHTML = "";
+
+  const allPlans = [FREE_PLAN, ...landingPaidPlans];
+  // Feature the plan that best fits the selected audience — a fleet/business
+  // is nudged toward the largest pack, an individual toward the mid pack.
+  const featuredId = audienceMode === "business" ? "bulk_50" : "growth_20";
+
+  allPlans.forEach((plan) => {
+    const isFree = plan.plan_id === "free";
+    const featured = plan.plan_id === featuredId;
+    const card = document.createElement("div");
+    card.className = "plan-card" + (featured ? " featured" : "") + (isFree ? " free" : "");
+
+    const perUnit = plan.credits > 0 ? (plan.price_gbp / plan.credits) : 0;
+    card.innerHTML = `
+      ${featured ? '<div class="plan-ribbon">Recommended</div>' : ""}
+      <div class="plan-name">${escapeHtml(plan.name)}</div>
+      <div class="plan-price">${plan.price_gbp > 0 ? "£" + plan.price_gbp.toFixed(2) : "£0"}${plan.price_gbp > 0 ? "<small> one-time</small>" : "<small> forever</small>"}</div>
+      <div class="plan-credits">${plan.credits} PCN credit${plan.credits === 1 ? "" : "s"}</div>
+      ${plan.price_gbp > 0 ? `<div class="plan-per-unit">~£${perUnit.toFixed(2)} per PCN</div>` : `<div class="plan-per-unit">Great for trying the platform out</div>`}
+      <button type="button" data-plan-id="${plan.plan_id}">${isFree ? "Start free" : "Select plan"}</button>
+    `;
+    card.querySelector("button").addEventListener("click", () => choosePlan(plan));
+    grid.appendChild(card);
+  });
+}
+
+function choosePlan(plan) {
+  pendingPlanId = plan.plan_id;
+  el("landing-view").classList.add("hidden");
+  el("auth-view").classList.remove("hidden");
+
+  const banner = el("selected-plan-banner");
+  if (plan.plan_id === "free") {
+    el("selected-plan-text").textContent = "Free tier selected — 5 PCN credits, no payment needed.";
+  } else {
+    el("selected-plan-text").textContent = `${plan.name} selected — ${plan.credits} credits for £${plan.price_gbp.toFixed(2)}. Register or log in, then you'll be taken straight to secure checkout.`;
+  }
+  banner.classList.remove("hidden");
+
+  switchTab("register");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+el("landing-login-link").addEventListener("click", () => {
+  pendingPlanId = null;
+  el("selected-plan-banner").classList.add("hidden");
+  el("landing-view").classList.add("hidden");
+  el("auth-view").classList.remove("hidden");
+  switchTab("login");
+});
+
+el("back-to-landing-link").addEventListener("click", () => {
+  el("auth-view").classList.add("hidden");
+  el("landing-view").classList.remove("hidden");
+});
+
+el("change-plan-link").addEventListener("click", () => {
+  pendingPlanId = null;
+  el("selected-plan-banner").classList.add("hidden");
+  el("auth-view").classList.add("hidden");
+  el("landing-view").classList.remove("hidden");
+});
+
+// ---------- auth ----------
+el("tab-login").addEventListener("click", () => switchTab("login"));
+el("tab-register").addEventListener("click", () => switchTab("register"));
+
+function switchTab(tab) {
+  el("tab-login").classList.toggle("active", tab === "login");
+  el("tab-register").classList.toggle("active", tab === "register");
+  el("login-form").classList.toggle("hidden", tab !== "login");
+  el("register-form").classList.toggle("hidden", tab !== "register");
+  clearMsg("auth-msg");
+}
+
+el("login-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  clearMsg("auth-msg");
+  const u = el("login-username").value;
+  const p = el("login-password").value;
+  try {
+    const form = new URLSearchParams();
+    form.set("username", u);
+    form.set("password", p);
+    const data = await api("/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: form.toString(),
+    });
+    token = data.access_token;
+    username = u;
+    localStorage.setItem("pcn_token", token);
+    localStorage.setItem("pcn_username", username);
+    enterApp();
+  } catch (err) {
+    showMsg("auth-msg", "Login failed: " + err.message, "error");
+  }
+});
+
+el("register-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  clearMsg("auth-msg");
+  const u = el("register-username").value;
+  const p = el("register-password").value;
+  try {
+    await api("/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: u, password: p }),
+    });
+    showMsg("auth-msg", "Account created — now log in.", "success");
+    switchTab("login");
+    el("login-username").value = u;
+  } catch (err) {
+    showMsg("auth-msg", "Registration failed: " + err.message, "error");
+  }
+});
+
+el("logout-btn").addEventListener("click", () => {
+  token = null;
+  username = null;
+  localStorage.removeItem("pcn_token");
+  localStorage.removeItem("pcn_username");
+  location.reload();
+});
+
+function enterApp() {
+  el("landing-view").classList.add("hidden");
+  el("auth-view").classList.add("hidden");
+  el("app-view").classList.remove("hidden");
+  el("user-info").classList.remove("hidden");
+  el("username-display").textContent = username || "";
+  showPage("home");
+  loadNotices();
+  loadCredits();
+  loadPlans();
+  handleCheckoutRedirect();
+  handlePcnCheckoutRedirect();
+  maybeAutoCheckout();
+}
+
+// ---------- app-view page navigation wiring ----------
+el("credits-nav-btn").addEventListener("click", () => showPage("credits"));
+el("home-credits-card").addEventListener("click", () => showPage("credits"));
+el("home-notices-card").addEventListener("click", () => showPage("notices"));
+el("back-to-home-from-credits").addEventListener("click", () => showPage("home"));
+el("back-to-home-from-notices").addEventListener("click", () => showPage("home"));
+el("back-to-notices-from-detail").addEventListener("click", () => showPage("notices"));
+el("review-back-link").addEventListener("click", () => showPage("notices"));
+
+// ---------- credits & plans (Stripe) ----------
+// Credits are shown in three places at once (the credits page, the header
+// pill, and the home page stat card) — this is the one place that writes to
+// all three, so nowhere else ever sets just one of them and leaves the
+// others stale.
+function setCreditsDisplay(value) {
+  el("credits-remaining").textContent = value;
+  el("credits-nav-count").textContent = value;
+  el("home-credits-value").textContent = value;
+}
+
+async function loadCredits() {
+  try {
+    const data = await api("/billing/credits");
+    setCreditsDisplay(data.credits_remaining);
+  } catch (err) {
+    setCreditsDisplay("?");
+  }
+}
+
+const PLAN_DISPLAY_NAMES = { starter_10: "Starter Pack", growth_20: "Growth Pack", bulk_50: "Bulk Pack" };
+function prettyPlanName(planId) { return PLAN_DISPLAY_NAMES[planId] || planId; }
+
+// Real purchase history via the existing GET /billing/purchases endpoint —
+// already built and used by the API, just not previously surfaced in the
+// UI. Loaded lazily (only once the <details> is actually opened) since
+// most visits won't need it.
+let purchaseHistoryLoaded = false;
+async function loadPurchaseHistory() {
+  const box = el("purchase-history");
+  box.innerHTML = '<div class="empty-state" style="padding:14px 4px;">Loading...</div>';
+  try {
+    const purchases = await api("/billing/purchases");
+    if (!purchases.length) {
+      box.innerHTML = '<div class="empty-state" style="padding:14px 4px;">No purchases yet — buy a pack above to see it appear here.</div>';
+      return;
+    }
+    box.innerHTML = purchases.map((p) => `
+      <div class="purchase-row">
+        <div>
+          <div class="purchase-plan">${escapeHtml(prettyPlanName(p.plan_id))}</div>
+          <div class="purchase-date">${fmtDate(p.created_at)}</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="purchase-amount">£${p.amount_gbp.toFixed(2)} · +${p.credits_granted} credits</div>
+          <span class="badge purchase-${p.status}">${escapeHtml(p.status)}</span>
+        </div>
+      </div>
+    `).join("");
+  } catch (err) {
+    box.innerHTML = `<div class="msg error">Could not load purchase history: ${escapeHtml(err.message)}</div>`;
+  }
+}
+el("purchase-history-details").addEventListener("toggle", function () {
+  if (this.open && !purchaseHistoryLoaded) {
+    purchaseHistoryLoaded = true;
+    loadPurchaseHistory();
+  }
+});
+
+async function loadPlans() {
+  try {
+    const plans = await api("/billing/plans");
+    const box = el("plans-list");
+    box.innerHTML = "";
+    plans.forEach((plan) => {
+      const btn = document.createElement("button");
+      btn.className = "plan-chip";
+      btn.innerHTML = `<span class="chip-price">£${plan.price_gbp.toFixed(2)}</span><span class="chip-sub">${escapeHtml(plan.name)} — ${plan.credits} credits</span>`;
+      btn.addEventListener("click", () => startCheckout(plan.plan_id, btn));
+      box.appendChild(btn);
+    });
+  } catch (err) {
+    showMsg("credits-msg", "Could not load plans: " + err.message, "error");
+  }
+}
+
+async function startCheckout(planId, btn) {
+  clearMsg("credits-msg");
+  const original = btn ? btn.innerHTML : null;
+  if (btn) { btn.disabled = true; btn.textContent = "Redirecting to Stripe..."; }
+  try {
+    const result = await api("/billing/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ plan_id: planId }),
+    });
+    // Real redirect to Stripe's own hosted Checkout page — card details
+    // are entered there, never on this site.
+    window.location.href = result.checkout_url;
+  } catch (err) {
+    showMsg("credits-msg", "Could not start checkout: " + err.message, "error");
+    if (btn) { btn.disabled = false; btn.innerHTML = original; }
+  }
+}
+
+// If the visitor picked a paid plan on the landing page before registering
+// or logging in, take them straight into Stripe Checkout for that plan the
+// moment they land in the dashboard — they shouldn't have to find the plan
+// again themselves. Runs at most once per plan selection: pendingPlanId is
+// cleared immediately, whether checkout starts successfully or not, so a
+// normal future login never re-triggers it.
+async function maybeAutoCheckout() {
+  if (!pendingPlanId || pendingPlanId === "free") {
+    pendingPlanId = null;
+    return;
+  }
+  const planId = pendingPlanId;
+  pendingPlanId = null;
+  showMsg("credits-msg", "Taking you to secure Stripe checkout for your selected plan...", "info");
+  try {
+    const result = await api("/billing/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ plan_id: planId }),
+    });
+    window.location.href = result.checkout_url;
+  } catch (err) {
+    showMsg("credits-msg", "Couldn't start checkout automatically (" + err.message + ") — pick a pack below whenever you're ready.", "error");
+  }
+}
+
+// Stripe redirects the browser back to success_url/cancel_url (see
+// app/routers/billing.py) with a ?checkout=... query param. Credits
+// themselves are only ever granted by Stripe's webhook hitting the
+// backend directly (source of truth), which for a local Stripe CLI
+// listener is typically near-instant — but "near" isn't "guaranteed
+// before this redirect lands," so this actively polls for the credit
+// balance to actually rise, rather than firing a couple of background
+// refreshes and leaving the original "crediting your account..." message
+// sitting there unchanged regardless of whether it actually worked yet.
+async function handleCheckoutRedirect() {
+  const params = new URLSearchParams(location.search);
+  const checkout = params.get("checkout");
+  if (!checkout) return;
+
+  // Clean the query string immediately — before the poll below even
+  // starts — so a page refresh mid-poll never re-triggers this.
+  const url = new URL(location.href);
+  url.searchParams.delete("checkout");
+  url.searchParams.delete("session_id");
+  history.replaceState({}, "", url.toString());
+
+  // Land on the credits page itself for this — its status message and
+  // balance live there, and the header pill / home stat card now update in
+  // lockstep via setCreditsDisplay() regardless of which page is showing,
+  // but the user should still actually see the "payment confirmed" message
+  // rather than have it get written into a page they're not looking at.
+  showPage("credits");
+
+  if (checkout === "cancel") {
+    showMsg("credits-msg", "Checkout cancelled — no payment was made.", "info");
+    return;
+  }
+  if (checkout !== "success") return;
+
+  showMsg(
+    "credits-msg",
+    '<span class="spinner"></span> Payment received — confirming with Stripe and crediting your account'
+      + '<span class="progress-dots"><span></span><span></span><span></span></span>',
+    "pending"
+  );
+
+  let before = null;
+  try {
+    const data = await api("/billing/credits");
+    before = data.credits_remaining;
+    setCreditsDisplay(before);
+  } catch (err) { /* keep polling regardless — the balance will still be re-read below */ }
+
+  // A handful of retries over ~13 seconds — generous for a local `stripe
+  // listen` hop, which is normally near-instant, while still resolving to
+  // a definite outcome instead of leaving the pending message up forever.
+  const waits = [1200, 1500, 2000, 2500, 3000, 3000];
+  for (const wait of waits) {
+    await new Promise((resolve) => setTimeout(resolve, wait));
+    try {
+      const data = await api("/billing/credits");
+      setCreditsDisplay(data.credits_remaining);
+      if (before == null || data.credits_remaining > before) {
+        showMsg("credits-msg", `Payment confirmed — credits updated (now ${data.credits_remaining}).`, "success");
+        purchaseHistoryLoaded = false; // this purchase just completed — force a fresh load next time it's viewed
+        if (el("purchase-history-details").open) loadPurchaseHistory();
+        return;
+      }
+    } catch (err) { /* transient — keep polling */ }
+  }
+
+  showMsg(
+    "credits-msg",
+    "Payment succeeded, but the credit update hasn't come through yet. If you're running this locally, make sure "
+      + "<code>stripe listen --forward-to localhost:8000/billing/webhook</code> is still connected — that's what "
+      + "actually delivers the confirmation. Refreshing this page in a few seconds usually catches it.",
+    "info"
+  );
+}
+
+// Same pattern as handleCheckoutRedirect() above, but for the PCN
+// facilitation-fee checkout (POST /billing/checkout-pcns) — Stripe
+// redirects back here with ?pcn_checkout=... instead of ?checkout=...
+// so the two flows never get confused with each other. Polls
+// GET /billing/pcn-payments (rather than a single balance number, since
+// there's no running total to watch) for the most recent payment to flip
+// to "completed".
+async function handlePcnCheckoutRedirect() {
+  const params = new URLSearchParams(location.search);
+  const pcnCheckout = params.get("pcn_checkout");
+  if (!pcnCheckout) return;
+
+  const url = new URL(location.href);
+  url.searchParams.delete("pcn_checkout");
+  url.searchParams.delete("session_id");
+  history.replaceState({}, "", url.toString());
+
+  if (pcnCheckout === "cancel") {
+    showMsg("pcn-checkout-msg", "Checkout cancelled — no fee was charged.", "info");
+    return;
+  }
+  if (pcnCheckout !== "success") return;
+
+  showMsg(
+    "pcn-checkout-msg",
+    '<span class="spinner"></span> Payment received — confirming with Stripe'
+      + '<span class="progress-dots"><span></span><span></span><span></span></span>',
+    "pending"
+  );
+
+  const waits = [1200, 1500, 2000, 2500, 3000, 3000];
+  for (const wait of waits) {
+    await new Promise((resolve) => setTimeout(resolve, wait));
+    try {
+      const payments = await api("/billing/pcn-payments");
+      const mostRecent = payments[0]; // ordered newest-first by the backend
+      if (mostRecent && mostRecent.status === "completed") {
+        showMsg(
+          "pcn-checkout-msg",
+          `Facilitation fee confirmed — £${mostRecent.amount_gbp.toFixed(2)} for ${mostRecent.notice_count} notice${mostRecent.notice_count === 1 ? "" : "s"}. This doesn't change any notice's paid/unpaid status — that's tracked separately above.`,
+          "success"
+        );
+        return;
+      }
+    } catch (err) { /* transient — keep polling */ }
+  }
+
+  showMsg(
+    "pcn-checkout-msg",
+    "Payment succeeded, but confirmation hasn't come through yet. If you're running this locally, make sure "
+      + "<code>stripe listen --forward-to localhost:8000/billing/webhook</code> is still connected. Refreshing "
+      + "this page in a few seconds usually catches it.",
+    "info"
+  );
+}
+
+// ---------- upload / paste ----------
+el("upload-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  clearMsg("upload-msg");
+  const fileInput = el("pdf-file");
+  const fileCount = fileInput.files.length;
+  if (!fileCount) return;
+
+  const fd = new FormData();
+  for (const f of fileInput.files) fd.append("files", f);
+
+  el("upload-btn").disabled = true;
+  el("upload-btn").textContent = fileCount > 1 ? `Extracting ${fileCount} files...` : "Extracting...";
+  // Most PDFs classify in a couple of seconds, but a scanned/photographed
+  // notice that needs the OCR fallback (see app/services/pdf_extractor.py)
+  // can genuinely take 30-90+ seconds if the page was scanned at a very
+  // high native resolution — measured up to ~75s on one real notice during
+  // testing. Without this, that just looks like the button hanging.
+  const slowScanTimer = setTimeout(() => {
+    el("upload-btn").textContent = "Still extracting — large scanned PDFs can take up to a minute...";
+  }, 6000);
+  try {
+    // Always goes through the batch endpoint, even for a single file —
+    // one code path instead of two, and it behaves identically for one
+    // file (a "batch" of size 1). Every file is classified independently
+    // by the rule-based classifier — nothing here is "training" a model,
+    // since there's no model to train (see classifier.py's docstring);
+    // uploading several just gets several notices classified in one go.
+    const result = await api("/notices/upload-batch", { method: "POST", body: fd });
+    const okCount = result.succeeded.length;
+    const failCount = result.failed.length;
+
+    if (okCount && !failCount) {
+      showMsg("upload-msg", `Extracted and classified ${okCount} notice${okCount === 1 ? "" : "s"}. ${appealabilitySummaryLine(result.succeeded)}`, "success");
+    } else if (okCount && failCount) {
+      const failList = result.failed.map((f) => `${escapeHtml(f.filename)}: ${escapeHtml(f.error)}`).join("; ");
+      showMsg("upload-msg", `${okCount} succeeded, ${failCount} failed — ${failList}. ${appealabilitySummaryLine(result.succeeded)}`, "info");
+    } else {
+      const failList = result.failed.map((f) => `${escapeHtml(f.filename)}: ${escapeHtml(f.error)}`).join("; ");
+      showMsg("upload-msg", `All ${failCount} file${failCount === 1 ? "" : "s"} failed — ${failList}`, "error");
+    }
+
+    fileInput.value = "";
+    await loadNotices();
+    if (okCount) {
+      selectNotice(result.succeeded[result.succeeded.length - 1].id);
+      loadCredits(); // each succeeded file spent one credit
+    }
+  } catch (err) {
+    showMsg("upload-msg", "Upload failed: " + err.message, "error");
+  } finally {
+    clearTimeout(slowScanTimer);
+    el("upload-btn").disabled = false;
+    el("upload-btn").textContent = "Upload & extract";
+  }
+});
+
+el("paste-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  clearMsg("upload-msg");
+  const text = el("paste-text").value.trim();
+  if (!text) return;
+  try {
+    const notice = await api("/notices", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ raw_text: text }),
+    });
+    showMsg("upload-msg", `Notice submitted and classified. ${appealabilitySummaryLine([notice])}`, "success");
+    el("paste-text").value = "";
+    await loadNotices();
+    selectNotice(notice.id);
+    loadCredits(); // this notice just spent one credit
+  } catch (err) {
+    showMsg("upload-msg", "Submit failed: " + err.message, "error");
+  }
+});
+
+// One-line, right-after-upload summary of the appealability pre-check
+// (see app/services/appealability_checker.py) across whichever notices
+// were just processed — surfaced immediately in the upload success
+// message itself, before the user has navigated anywhere or typed a
+// reason for appealing. The full per-signal breakdown lives on each
+// notice's own detail page (renderAppealabilityPanel above).
+function appealabilitySummaryLine(succeededNotices) {
+  if (!succeededNotices || !succeededNotices.length) return "";
+  const worthAppealing = succeededNotices.filter((n) => n.appealability?.verdict === "worth_appealing").length;
+  const deadlinePassed = succeededNotices.filter((n) => n.appealability?.verdict === "deadline_likely_passed").length;
+  const parts = [];
+  if (worthAppealing) parts.push(`${worthAppealing} may be worth appealing`);
+  if (deadlinePassed) parts.push(`${deadlinePassed} may be past the appeal deadline`);
+  if (!parts.length) return "See each notice's own appealability check for details.";
+  return `Quick check: ${parts.join(", ")} — see each notice's own page for why.`;
+}
+
+// ---------- notice list ----------
+async function loadNotices() {
+  try {
+    notices = await api("/notices");
+    renderNoticeList();
+  } catch (err) {
+    showMsg("upload-msg", "Could not load notices: " + err.message, "error");
+  }
+}
+
+const UNPAYABLE_STATUSES = ["paid", "resolved"]; // already settled — no reason to offer them for (simulated) payment again
+
+// At-a-glance appealability chip for the notice-list cards — only shown for
+// the two verdicts worth flagging before a user even opens the notice
+// ("worth appealing" and "deadline likely passed"); the other verdicts are
+// either neutral (no issue found) or already obvious from the status badge
+// (not applicable), so adding a chip for those would just be noise.
+function appealabilityBadgeHtml(notice) {
+  const a = notice.appealability;
+  if (!a) return "";
+  if (a.verdict === "worth_appealing") {
+    return `<span class="appealability-chip verdict-worth_appealing" style="background:#e3f3ec; color:var(--success);">Worth appealing</span>`;
+  }
+  if (a.verdict === "deadline_likely_passed") {
+    return `<span class="appealability-chip verdict-deadline_likely_passed" style="background:#fbe9e9; color:var(--danger);">Deadline passed</span>`;
+  }
+  return "";
+}
+
+function renderNoticeList() {
+  const list = el("notice-list");
+  list.innerHTML = "";
+  el("notice-list-empty").classList.toggle("hidden", notices.length > 0);
+  el("home-notices-value").textContent = notices.length;
+  el("home-notices-cta").textContent = notices.length ? "View my notices →" : "Upload your first PCN above";
+
+  // Drop any previously-ticked ids that no longer exist or have since been
+  // paid/resolved, so the selection bar never references stale state.
+  const validIds = new Set(
+    notices.filter((n) => !UNPAYABLE_STATUSES.includes(n.status)).map((n) => n.id)
+  );
+  for (const id of [...selectedNotices]) {
+    if (!validIds.has(id)) selectedNotices.delete(id);
+  }
+
+  notices.forEach((n) => {
+    const li = document.createElement("li");
+    li.className = "notice-list-item status-" + n.status + (n.id === selectedNoticeId ? " selected" : "");
+    const payable = !UNPAYABLE_STATUSES.includes(n.status);
+    li.innerHTML = `
+      <div style="display:flex; align-items:flex-start; gap:8px;">
+        ${payable
+          ? `<input type="checkbox" class="pay-select-checkbox" data-id="${n.id}" ${selectedNotices.has(n.id) ? "checked" : ""} style="margin-top:3px;" />`
+          : `<span style="width:13px;"></span>`}
+        <div style="flex:1;">
+          <div class="reg">${n.vehicle_registration || "Unknown vehicle"}</div>
+          <div style="color:var(--muted);">${fmtStatus(n.penalty_type)} — £${n.amount_gbp ?? "?"}</div>
+          <span class="badge ${n.status}">${fmtStatus(n.status)}</span>${appealabilityBadgeHtml(n)}
+        </div>
+      </div>
+    `;
+    li.addEventListener("click", () => { selectNotice(n.id); showPage("notice-detail"); });
+    const checkbox = li.querySelector(".pay-select-checkbox");
+    if (checkbox) {
+      checkbox.addEventListener("click", (e) => e.stopPropagation()); // don't also trigger the li's own click handler above
+      checkbox.addEventListener("change", (e) => {
+        if (e.target.checked) selectedNotices.add(n.id);
+        else selectedNotices.delete(n.id);
+        updateSelectionBar();
+      });
+    }
+    list.appendChild(li);
+  });
+
+  updateSelectionBar();
+}
+
+// Drives the sticky selection bar at the bottom of the notices page — one
+// shared "N selected" readout plus the two entry points into the one-by-one
+// review page (appeal or pay), replacing the two separate mini-summary cards
+// that used to sit on the old dashboard.
+function updateSelectionBar() {
+  const selected = notices.filter((n) => selectedNotices.has(n.id));
+  const onNoticesPage = !el("page-notices").classList.contains("hidden");
+  el("selection-bar").classList.toggle("hidden", !(onNoticesPage && selected.length > 0));
+
+  const summary = el("selection-bar-summary");
+  const appealBtn = el("open-batch-appeal-btn");
+  const payBtn = el("open-batch-pay-btn");
+
+  if (!selected.length) {
+    summary.textContent = "No notices selected.";
+    appealBtn.disabled = true;
+    payBtn.disabled = true;
+    return;
+  }
+
+  const total = selected.reduce((sum, n) => sum + (n.amount_gbp || 0), 0);
+  const missingAmounts = selected.some((n) => n.amount_gbp == null);
+  summary.innerHTML = `<strong>${selected.length}</strong> notice${selected.length === 1 ? "" : "s"} selected — total <strong>£${total.toFixed(2)}</strong>${missingAmounts ? " (some amounts not detected)" : ""}`;
+  appealBtn.disabled = false;
+  payBtn.disabled = false;
+}
+
+// ---------- one-by-one review page (appeals & payments) ----------
+// Replaces the old pop-up modals for both batch flows: pick several notices
+// on the notices page, then this page shows them as a left-hand rail with
+// one notice's full detail/action in the main panel at a time — clearer than
+// stacking every letter or option on top of each other in one small overlay.
+el("open-batch-appeal-btn").addEventListener("click", () => startReview("appeal"));
+el("open-batch-pay-btn").addEventListener("click", () => startReview("pay"));
+
+function startReview(mode) {
+  reviewMode = mode;
+  reviewNotices = notices.filter((n) => selectedNotices.has(n.id));
+  reviewIndex = 0;
+  reviewDraftsGenerated = false;
+  reviewDrafts = reviewNotices.map((n) => ({ notice: n, appealId: null, draftText: "", reason: "", status: "pending", error: null, submissionRef: null }));
+
+  el("review-title").textContent = mode === "appeal" ? "Appeal selected notices" : "Pay selected notices";
+  el("review-subtitle").textContent = mode === "appeal"
+    ? "Review each notice on the left, generate an AI draft for all of them, then edit and submit one by one."
+    : "Review each notice on the left, then choose how to pay for all of them together below.";
+
+  el("review-appeal-submit-card").classList.add("hidden");
+  el("review-pay-card").classList.add("hidden");
+  clearMsg("review-appeal-submit-msg");
+  clearMsg("batch-pay-msg");
+  clearMsg("pcn-stripe-msg");
+
+  if (mode === "pay") renderReviewPayCard();
+
+  renderReviewRail();
+  renderReviewMain();
+  showPage("review");
+}
+
+function renderReviewRail() {
+  const rail = el("review-rail");
+  rail.innerHTML = "";
+  reviewNotices.forEach((n, i) => {
+    const div = document.createElement("div");
+    div.className = "review-rail-item" + (i === reviewIndex ? " active" : "");
+    let statusText = fmtStatus(n.status);
+    if (reviewMode === "appeal") {
+      const d = reviewDrafts[i];
+      if (d.status === "submitted") statusText = "Submitted ✓";
+      else if (d.status === "failed") statusText = "Failed";
+      else if (d.status === "drafted") statusText = "Draft ready";
+      else statusText = "Awaiting draft";
+    }
+    div.innerHTML = `<div class="rail-reg">${escapeHtml(n.vehicle_registration || "Unknown vehicle")}</div><div class="rail-status">${escapeHtml(statusText)}</div>`;
+    div.addEventListener("click", () => {
+      saveCurrentDraftEdit();
+      reviewIndex = i;
+      renderReviewRail();
+      renderReviewMain();
+    });
+    rail.appendChild(div);
+  });
+}
+
+// Persists whatever's currently in the (appeal-mode) draft textarea back
+// into reviewDrafts before navigating away from it — renderReviewMain()
+// rebuilds that textarea from scratch every time, so an in-progress edit
+// would otherwise be lost the moment you click another notice or Prev/Next.
+function saveCurrentDraftEdit() {
+  if (reviewMode !== "appeal") return;
+  const ta = el("review-draft-textarea");
+  if (ta && reviewDrafts[reviewIndex]) reviewDrafts[reviewIndex].draftText = ta.value;
+}
+
+function renderReviewMain() {
+  const main = el("review-main");
+  const n = reviewNotices[reviewIndex];
+  if (!n) { main.innerHTML = ""; return; }
+  const noticeLabel = `${escapeHtml(n.vehicle_registration || "Unknown vehicle")} — ${fmtStatus(n.penalty_type)} — £${n.amount_gbp ?? "?"}`;
+  const navHtml = `
+    <div class="actions-row" style="margin-top:16px; align-items:center;">
+      <button class="secondary" type="button" id="review-prev-btn" ${reviewIndex === 0 ? "disabled" : ""}>&larr; Previous</button>
+      <button class="secondary" type="button" id="review-next-btn" ${reviewIndex === reviewNotices.length - 1 ? "disabled" : ""}>Next &rarr;</button>
+      <span style="font-size:12px; color:var(--muted);">Notice ${reviewIndex + 1} of ${reviewNotices.length}</span>
+    </div>`;
+
+  if (reviewMode === "appeal") {
+    if (!reviewDraftsGenerated) {
+      const reasonBlocks = reviewNotices.map((rn, i) => {
+        const rnLabel = `${escapeHtml(rn.vehicle_registration || "Unknown vehicle")} — ${fmtStatus(rn.penalty_type)} — £${rn.amount_gbp ?? "?"}`;
+        return `
+        <div class="review-reason-block" style="margin-bottom:18px; padding-bottom:14px; border-bottom:1px solid var(--border, #e5e5e5);">
+          <label for="review-reason-${i}"><strong>${rnLabel}</strong> — why are you appealing this one? (optional)</label>
+          <div class="chip-row" id="review-reason-chips-${i}">
+            <button type="button" class="reason-chip" data-reason="I had a valid permit / pay-and-display ticket clearly displayed at the time.">Valid permit displayed</button>
+            <button type="button" class="reason-chip" data-reason="The signage at this location was missing, unclear, or obscured, so the restriction was not reasonably visible.">Unclear signage</button>
+            <button type="button" class="reason-chip" data-reason="I was not the driver at the time of the alleged contravention.">Not the driver</button>
+          </div>
+          <textarea id="review-reason-${i}" rows="2" placeholder="e.g. I had a valid permit displayed at the time...">${escapeHtml(reviewDrafts[i].reason || "")}</textarea>
+        </div>`;
+      }).join("");
+      main.innerHTML = `
+        <h2>${noticeLabel}</h2>
+        <p class="hint" style="margin-top:-6px;">Give each notice its own reason below, then generate AI drafts for all <strong>${reviewNotices.length}</strong> at once — you can still edit each letter individually afterwards.</p>
+        ${reasonBlocks}
+        <div id="review-draft-msg"></div>
+        <button id="review-draft-all-btn">Generate AI drafts for all ${reviewNotices.length} notices</button>
+      `;
+      reviewNotices.forEach((rn, i) => {
+        document.querySelectorAll(`#review-reason-chips-${i} .reason-chip`).forEach((chip) => {
+          chip.addEventListener("click", () => { el(`review-reason-${i}`).value = chip.dataset.reason; });
+        });
+      });
+      el("review-draft-all-btn").addEventListener("click", generateAllDrafts);
+    } else {
+      const d = reviewDrafts[reviewIndex];
+      let statusBadge = "";
+      if (d.status === "submitted") statusBadge = `<span class="badge appeal_submitted">Submitted — ref ${escapeHtml(d.submissionRef || "")}</span>`;
+      else if (d.status === "failed") statusBadge = `<span class="badge" style="background:#fdecea; color:var(--danger);">Failed — ${escapeHtml(d.error || "")}</span>`;
+      main.innerHTML = `
+        <h2>${noticeLabel}</h2>
+        ${statusBadge ? `<div style="margin-bottom:10px;">${statusBadge}</div>` : ""}
+        <label for="review-draft-textarea">AI-drafted letter (edit as needed)</label>
+        <textarea id="review-draft-textarea" style="min-height:200px;" ${d.status === "submitted" ? "disabled" : ""}>${escapeHtml(d.draftText)}</textarea>
+        ${navHtml}
+      `;
+    }
+  } else {
+    main.innerHTML = `
+      <h2>${noticeLabel}</h2>
+      <div class="field-row">
+        <div class="field"><span class="k">Issued by: </span><span class="v">${escapeHtml(n.issuing_authority || "not detected")}</span></div>
+        <div class="field"><span class="k">Status: </span><span class="badge ${n.status}">${fmtStatus(n.status)}</span></div>
+      </div>
+      <p class="hint">The real parking charge stays owed to the actual issuer either way — see the payment options below for what each one actually does.</p>
+      ${navHtml}
+    `;
+  }
+
+  el("review-prev-btn")?.addEventListener("click", () => { saveCurrentDraftEdit(); reviewIndex--; renderReviewRail(); renderReviewMain(); });
+  el("review-next-btn")?.addEventListener("click", () => { saveCurrentDraftEdit(); reviewIndex++; renderReviewRail(); renderReviewMain(); });
+}
+
+async function generateAllDrafts() {
+  const btn = el("review-draft-all-btn");
+  clearMsg("review-draft-msg");
+  btn.disabled = true;
+  btn.textContent = "Generating drafts...";
+  try {
+    const noticeIds = reviewNotices.map((n) => n.id);
+    const reasons = {};
+    reviewNotices.forEach((n, i) => {
+      const val = (el(`review-reason-${i}`)?.value || "").trim();
+      reviewDrafts[i].reason = val;
+      if (val) reasons[n.id] = val;
+    });
+    const result = await api("/appeals/draft-batch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ notice_ids: noticeIds, reasons }),
+    });
+    const byNoticeId = new Map(result.succeeded.map((a) => [a.notice_id, a]));
+    reviewDrafts.forEach((d) => {
+      const appeal = byNoticeId.get(d.notice.id);
+      if (appeal) {
+        d.appealId = appeal.id;
+        d.draftText = appeal.draft_text;
+        d.status = "drafted";
+      } else {
+        const failure = result.failed.find((f) => f.notice_id === d.notice.id);
+        d.status = "failed";
+        d.error = failure ? failure.error : "Could not draft";
+      }
+    });
+    reviewDraftsGenerated = true;
+    reviewIndex = 0;
+    renderReviewRail();
+    renderReviewMain();
+    el("review-appeal-submit-card").classList.remove("hidden");
+    if (result.failed.length) {
+      showMsg("review-appeal-submit-msg", `${result.succeeded.length} drafted, ${result.failed.length} failed.`, "info");
+    }
+  } catch (err) {
+    showMsg("review-draft-msg", "Could not generate drafts: " + err.message, "error");
+    btn.disabled = false;
+    btn.textContent = `Generate AI drafts for all ${reviewNotices.length} notices`;
+  }
+}
+
+el("review-submit-all-btn").addEventListener("click", async () => {
+  saveCurrentDraftEdit();
+  const appealsPayload = reviewDrafts.filter((d) => d.appealId).map((d) => ({ appeal_id: d.appealId, final_text: d.draftText }));
+  if (!appealsPayload.length) return;
+  clearMsg("review-appeal-submit-msg");
+  const btn = el("review-submit-all-btn");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Submitting to the sandbox provider — this can take a little while for several'
+    + '<span class="progress-dots"><span></span><span></span><span></span></span>';
+  try {
+    const result = await api("/appeals/submit-batch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ appeals: appealsPayload }),
+    });
+    const okById = new Map(result.succeeded.map((a) => [a.id, a]));
+    const failById = new Map(result.failed.map((f) => [f.appeal_id, f.error]));
+    reviewDrafts.forEach((d) => {
+      if (!d.appealId) return;
+      if (okById.has(d.appealId)) { d.status = "submitted"; d.submissionRef = okById.get(d.appealId).submission_reference; }
+      else if (failById.has(d.appealId)) { d.status = "failed"; d.error = failById.get(d.appealId); }
+    });
+    renderReviewRail();
+    renderReviewMain();
+    const okCount = result.succeeded.length;
+    const failCount = result.failed.length;
+    if (okCount && !failCount) {
+      showMsg("review-appeal-submit-msg", `All ${okCount} appeal${okCount === 1 ? "" : "s"} submitted successfully.`, "success");
+    } else if (okCount && failCount) {
+      showMsg("review-appeal-submit-msg", `${okCount} succeeded, ${failCount} failed — check each notice on the left.`, "info");
+    } else {
+      showMsg("review-appeal-submit-msg", `All ${failCount} submission${failCount === 1 ? "" : "s"} failed — check each notice on the left.`, "error");
+    }
+    selectedNotices.clear();
+    await loadNotices();
+    if (selectedNoticeId) await selectNotice(selectedNoticeId);
+  } catch (err) {
+    showMsg("review-appeal-submit-msg", "Batch submission failed: " + err.message, "error");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Submit all appeals";
+  }
+});
+
+// ---------- pay-mode review card (same two options as before, now inline on the review page) ----------
+function renderReviewPayCard() {
+  el("review-pay-card").classList.remove("hidden");
+  const total = reviewNotices.reduce((sum, n) => sum + (n.amount_gbp || 0), 0);
+  const missingAmounts = reviewNotices.some((n) => n.amount_gbp == null);
+  el("batch-pay-summary").innerHTML = `<strong>${reviewNotices.length}</strong> notice${reviewNotices.length === 1 ? "" : "s"} selected — total <strong>£${total.toFixed(2)}</strong>${missingAmounts ? " (some amounts not detected, excluded from total)" : ""}.`;
+  el("batch-pay-btn").disabled = false;
+  const fee = reviewNotices.length * PCN_FACILITATION_FEE_GBP_PER_NOTICE;
+  el("pcn-stripe-summary").innerHTML = `Facilitation fee for ${reviewNotices.length} notice${reviewNotices.length === 1 ? "" : "s"}: <strong>£${fee.toFixed(2)}</strong>`;
+  el("pcn-stripe-checkout-btn").disabled = false;
+}
+el("pcn-fee-rate").textContent = PCN_FACILITATION_FEE_GBP_PER_NOTICE.toFixed(2);
+
+el("batch-pay-btn").addEventListener("click", async () => {
+  const noticeIds = reviewNotices.map((n) => n.id);
+  if (!noticeIds.length) return;
+  clearMsg("batch-pay-msg");
+  el("batch-pay-btn").disabled = true;
+  el("batch-pay-btn").textContent = "Processing (simulated)...";
+  try {
+    const result = await api("/payments/pay-batch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        notice_ids: noticeIds,
+        // These three are never read or acted on server-side (see
+        // payments.py's docstring) — sent only so the demo checkout looks
+        // like a real one is posting real fields.
+        mock_card_number: el("mock-card-number").value,
+        mock_card_expiry: el("mock-card-expiry").value,
+        mock_card_cvc: el("mock-card-cvc").value,
+      }),
+    });
+    const okCount = result.succeeded.length;
+    const failCount = result.failed.length;
+    const totalText = result.total_amount_gbp != null ? ` Total: £${result.total_amount_gbp.toFixed(2)}.` : "";
+    if (okCount && !failCount) {
+      showMsg("batch-pay-msg", `Simulated payment for ${okCount} notice${okCount === 1 ? "" : "s"} succeeded.${totalText}`, "success");
+      setTimeout(() => showPage("notices"), 1800); // let the confirmation register before navigating back
+    } else if (okCount && failCount) {
+      showMsg("batch-pay-msg", `${okCount} succeeded, ${failCount} failed.${totalText}`, "info");
+    } else {
+      showMsg("batch-pay-msg", `All ${failCount} payment${failCount === 1 ? "" : "s"} failed.`, "error");
+    }
+    selectedNotices.clear();
+    await loadNotices();
+    if (selectedNoticeId) await selectNotice(selectedNoticeId);
+  } catch (err) {
+    showMsg("batch-pay-msg", "Batch payment failed: " + err.message, "error");
+  } finally {
+    el("batch-pay-btn").textContent = "Mark as paid (simulated)";
+    el("batch-pay-btn").disabled = false;
+  }
+});
+
+el("pcn-stripe-checkout-btn").addEventListener("click", async () => {
+  const noticeIds = reviewNotices.map((n) => n.id);
+  if (!noticeIds.length) return;
+  clearMsg("pcn-stripe-msg");
+  el("pcn-stripe-checkout-btn").disabled = true;
+  el("pcn-stripe-checkout-btn").textContent = "Redirecting to Stripe...";
+  try {
+    const result = await api("/billing/checkout-pcns", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ notice_ids: noticeIds }),
+    });
+    // Real redirect to Stripe's own hosted Checkout page, same as the
+    // credits flow above — no card details are ever entered on this site.
+    window.location.href = result.checkout_url;
+  } catch (err) {
+    showMsg("pcn-stripe-msg", "Could not start checkout: " + err.message, "error");
+    el("pcn-stripe-checkout-btn").disabled = false;
+    el("pcn-stripe-checkout-btn").textContent = "Pay facilitation fee via Stripe (test mode)";
+  }
+});
+
+el("verify-raw-text-link").addEventListener("click", (e) => {
+  e.preventDefault();
+  const box = el("d-raw-text");
+  box.scrollIntoView({ behavior: "smooth", block: "center" });
+  // brief highlight so it's obvious what just got scrolled to, since the
+  // box itself doesn't otherwise stand out from the rest of the card
+  box.style.transition = "box-shadow 0.2s";
+  box.style.boxShadow = "0 0 0 3px rgba(99,102,241,0.5)";
+  setTimeout(() => { box.style.boxShadow = "none"; }, 1500);
+});
+
+// ---------- appealability pre-check (see app/services/appealability_checker.py) ----------
+// Computed server-side from the notice's own printed/extracted details —
+// vehicle registration, issuing authority, amount, dates, and duplicate
+// detection against this account's other notices — never from the user's
+// own stated reason for appealing. Rendered here, before the "Draft an
+// appeal" section, so it's seen before that reason is even typed.
+const APPEALABILITY_VERDICT_LABELS = {
+  worth_appealing: "Worth appealing",
+  review_recommended: "Review recommended",
+  deadline_likely_passed: "Deadline likely passed",
+  no_procedural_issue_detected: "No issue detected",
+  not_applicable: "Not applicable",
+};
+
+function renderAppealabilityPanel(notice) {
+  const container = el("appealability-panel");
+  const a = notice.appealability;
+  if (!container || !a) { if (container) container.innerHTML = ""; return; }
+
+  const label = APPEALABILITY_VERDICT_LABELS[a.verdict] || a.verdict;
+  let deadlineNote = "";
+  if (a.deadline_days_remaining != null) {
+    const days = Math.abs(a.deadline_days_remaining);
+    deadlineNote = a.deadline_days_remaining >= 0
+      ? `est. ${days} day${days === 1 ? "" : "s"} left to act`
+      : `est. deadline passed ${days} day${days === 1 ? "" : "s"} ago`;
+  }
+
+  const signalsHtml = a.signals.length
+    ? a.signals.map((s) => `
+        <div class="appealability-signal sig-${escapeHtml(s.severity)}">
+          <span class="sig-label">${escapeHtml(s.severity)}</span>${escapeHtml(s.message)}
+        </div>
+      `).join("")
+    : `<div class="appealability-signal sig-info">No specific procedural issue was detected from the notice's own printed details. That doesn't mean you have no case — many successful appeals rest on your own circumstances rather than a defect in the notice — it just means this automatic check didn't flag anything on its own.</div>`;
+
+  container.innerHTML = `
+    <div class="appealability-panel verdict-${escapeHtml(a.verdict)}">
+      <h3>
+        <span class="badge verdict-${escapeHtml(a.verdict)}">${escapeHtml(label)}</span>
+        ${deadlineNote ? `<span style="font-weight:400; font-size:12px; color:var(--muted);">${escapeHtml(deadlineNote)}</span>` : ""}
+      </h3>
+      ${signalsHtml}
+      <div class="appealability-disclaimer">${escapeHtml(a.disclaimer)}</div>
+    </div>
+  `;
+}
+
+async function selectNotice(id) {
+  selectedNoticeId = id;
+  currentAppealId = null;
+  renderNoticeList();
+  clearMsg("detail-msg");
+  el("draft-section").classList.add("hidden");
+  el("submit-section").classList.add("hidden");
+  el("appeal-reason").value = "";
+
+  try {
+    const notice = await api(`/notices/${id}`);
+    currentNotice = notice;
+    el("d-type").textContent = fmtStatus(notice.penalty_type);
+    el("d-reg").textContent = notice.vehicle_registration || "not detected";
+    el("d-amount").textContent = notice.amount_gbp != null ? `£${notice.amount_gbp}` : "not detected";
+    el("d-status").textContent = fmtStatus(notice.status);
+    el("d-status").className = "badge " + notice.status;
+    el("d-authority").textContent = notice.issuing_authority || "not detected";
+    el("d-issue-date").textContent = fmtDate(notice.issue_date);
+    el("d-deadline-date").textContent = fmtDate(notice.deadline_date);
+    el("d-reference").textContent = notice.reference_number || "not detected";
+    el("d-raw-text").textContent = notice.raw_text;
+    renderAuthorityLinks(notice);
+    renderAppealabilityPanel(notice);
+    renderStepper(notice.status);
+    if (notice.status === "appeal_drafted" || notice.status === "appeal_submitted") {
+      el("draft-section").classList.remove("hidden");
+    }
+    if (notice.status === "appeal_submitted") {
+      el("submit-section").classList.remove("hidden");
+    }
+    const alreadySettled = UNPAYABLE_STATUSES.includes(notice.status);
+    el("pay-btn").disabled = alreadySettled;
+    el("pay-btn").textContent = alreadySettled ? "Already settled" : "Pay (simulated)";
+    el("pay-instead-hint").textContent = alreadySettled
+      ? "This notice is already paid/resolved — nothing more to do here."
+      : "Simulated payment for demo purposes — no real transaction occurs, no card details are collected.";
+  } catch (err) {
+    showMsg("detail-msg", "Could not load notice: " + err.message, "error");
+  }
+}
+
+// ---------- appeal drafting ----------
+el("draft-btn").addEventListener("click", async () => {
+  if (!selectedNoticeId) return;
+  clearMsg("detail-msg");
+  const reason = el("appeal-reason").value.trim();
+  el("draft-btn").disabled = true;
+  el("draft-btn").textContent = "Drafting with AI...";
+  try {
+    const appeal = await api(`/appeals/${selectedNoticeId}/draft`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason: reason || null }),
+    });
+    currentAppealId = appeal.id;
+    el("appeal-draft-text").value = appeal.draft_text;
+    el("draft-section").classList.remove("hidden");
+    showMsg("detail-msg", "Draft generated — review and edit before approving.", "info");
+    await loadNotices();
+    renderStepper("appeal_drafted");
+  } catch (err) {
+    showMsg("detail-msg", "Could not generate draft: " + err.message, "error");
+  } finally {
+    el("draft-btn").disabled = false;
+    el("draft-btn").textContent = "Generate appeal draft";
+  }
+});
+
+el("approve-btn").addEventListener("click", async () => {
+  if (!currentAppealId) return;
+  clearMsg("detail-msg");
+  try {
+    await api(`/appeals/${currentAppealId}/approve`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ final_text: el("appeal-draft-text").value }),
+    });
+    el("submit-section").classList.remove("hidden");
+    showMsg("detail-msg", "Appeal approved — ready to submit via the bot.", "success");
+  } catch (err) {
+    showMsg("detail-msg", "Could not approve: " + err.message, "error");
+  }
+});
+
+el("copy-letter-btn").addEventListener("click", () => {
+  copyLetterToClipboard(el("appeal-draft-text").value, el("copy-letter-btn"));
+});
+el("download-letter-btn").addEventListener("click", () => {
+  downloadLetterAsText(el("appeal-draft-text").value, currentNotice);
+});
+el("copy-letter-btn-2").addEventListener("click", () => {
+  copyLetterToClipboard(el("appeal-draft-text").value, el("copy-letter-btn-2"));
+});
+el("download-letter-btn-2").addEventListener("click", () => {
+  downloadLetterAsText(el("appeal-draft-text").value, currentNotice);
+});
+el("download-letter-pdf-btn").addEventListener("click", () => {
+  downloadLetterAsPDF(el("appeal-draft-text").value, currentNotice);
+});
+el("download-letter-pdf-btn-2").addEventListener("click", () => {
+  downloadLetterAsPDF(el("appeal-draft-text").value, currentNotice);
+});
+
+// ---------- appeal-reason quick-select chips ----------
+document.querySelectorAll(".reason-chip").forEach((chip) => {
+  chip.addEventListener("click", () => {
+    document.querySelectorAll(".reason-chip").forEach((c) => c.classList.remove("active"));
+    chip.classList.add("active");
+    el("appeal-reason").value = chip.dataset.reason;
+    el("appeal-reason").focus();
+  });
+});
+
+el("submit-bot-btn").addEventListener("click", async () => {
+  if (!currentAppealId) return;
+  clearMsg("detail-msg");
+  el("submit-bot-btn").disabled = true;
+  el("submit-bot-btn").textContent = "Bot is submitting... (check the opened browser window)";
+  try {
+    const appeal = await api(`/appeals/${currentAppealId}/submit`, { method: "POST" });
+    // selectNotice() below clears #detail-msg as part of refreshing the
+    // panel, so the success message has to be shown AFTER that reload
+    // completes, not before — showing it first meant it flashed and was
+    // immediately wiped out, the exact "vanishes before you can read it"
+    // problem this session already fixed once for the bot's browser
+    // window itself. Same bug, different place; caught it while testing
+    // the new copy/download buttons end-to-end.
+    await loadNotices();
+    await selectNotice(selectedNoticeId);
+    showMsg("detail-msg", `Submitted by the bot — sandbox reference: ${appeal.submission_reference}`, "success");
+  } catch (err) {
+    showMsg("detail-msg", "Bot submission failed: " + err.message, "error");
+  } finally {
+    el("submit-bot-btn").disabled = false;
+    el("submit-bot-btn").textContent = "Submit via AI bot (sandbox site)";
+  }
+});
+
+// ---------- payment (simulated) ----------
+el("pay-btn").addEventListener("click", async () => {
+  if (!selectedNoticeId) return;
+  clearMsg("detail-msg");
+  el("pay-btn").disabled = true;
+  try {
+    const result = await api(`/payments/${selectedNoticeId}/pay`, { method: "POST" });
+    // Same ordering fix as the bot-submit handler above — show the
+    // confirmation AFTER selectNotice() finishes refreshing the panel, not
+    // before, or it gets wiped out immediately by that refresh's clearMsg.
+    await loadNotices();
+    await selectNotice(selectedNoticeId);
+    showMsg("detail-msg", `${result.message} Reference: ${result.reference}`, "success");
+  } catch (err) {
+    showMsg("detail-msg", "Payment simulation failed: " + err.message, "error");
+  } finally {
+    el("pay-btn").disabled = false;
+  }
+});
+
+// ---------- boot ----------
+loadLandingPlans();
+if (token) {
+  enterApp();
+}
+</script>
+
+</body>
+</html>

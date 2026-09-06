@@ -1,0 +1,7 @@
+# Standalone requirements for the sandbox mock PCN-provider site.
+# The original dev setup ran this against the same venv as backend/ (see
+# the docstring in app.py) — this file lets it be deployed as its own
+# small service with nothing but what it actually imports.
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+python-multipart==0.0.9

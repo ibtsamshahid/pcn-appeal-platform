@@ -1,0 +1,25 @@
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+sqlalchemy==2.0.35
+psycopg2-binary==2.9.9
+alembic==1.13.2
+pydantic==2.9.2
+pydantic-settings==2.5.2
+python-dotenv==1.0.1
+anthropic==0.69.0
+python-multipart==0.0.9
+pyjwt==2.9.0
+bcrypt==4.2.0
+pdfplumber==0.11.4
+pytesseract==0.3.13
+pdf2image==1.17.0
+# pdfplumber -> pdfminer.six pulls in `cryptography` transitively. Pinned
+# below <44 because that's the last release with a prebuilt wheel for
+# Python 3.9 (which is end-of-life, so newer cryptography releases only
+# ship wheels for 3.10+). Without this pin, pip on a 3.9 venv falls back
+# to building cryptography from source, which needs Rust + OpenSSL headers
+# + pkg-config and fails on a typical dev machine. If/when you move this
+# venv to Python 3.10+, this pin is harmless (43.0.3 still installs fine).
+cryptography<44
+playwright==1.56.0
+stripe==15.5.0
