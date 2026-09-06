@@ -25,7 +25,7 @@ import threading
 
 from playwright.sync_api import sync_playwright
 
-MOCK_SITE_URL = os.getenv("MOCK_SITE_URL", "http://localhost:9000")
+MOCK_SITE_URL = os.getenv("MOCK_SITE_URL", "http://localhost:9000").rstrip("/")
 BOT_HEADLESS = os.getenv("BOT_HEADLESS", "false").lower() == "true"
 
 # How long (seconds) to leave the browser window open on the confirmation
