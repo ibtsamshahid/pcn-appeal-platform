@@ -44,7 +44,7 @@ BOT_DEMO_HOLD_SECONDS = float(os.getenv("BOT_DEMO_HOLD_SECONDS", "60"))
 # separate from BOT_DEMO_HOLD_SECONDS above — the API response goes back
 # as soon as the confirmation reference is scraped; the hold only delays
 # when the (now-detached) browser window itself closes.
-_SUBMISSION_TIMEOUT_SECONDS = 20
+_SUBMISSION_TIMEOUT_SECONDS = 45
 
 # Used by POST /appeals/submit-batch as the demo_hold_seconds override for
 # every submission in the batch — short enough that submitting several
@@ -102,15 +102,14 @@ def submit_appeal_via_bot(notice, appeal, demo_hold_seconds: float = None) -> di
                 )
                 try:
                     page = browser.new_page()
-                    page.goto(f"{MOCK_SITE_URL}/appeal-form", timeout=15000)
-
+                    page.goto(f"{MOCK_SITE_URL}/appeal-form", timeout=30000)
                     page.fill("#pcn_reference", pcn_reference)
                     page.fill("#vehicle_registration", vehicle_registration)
                     page.fill("#appellant_name", "Demo Driver")
                     page.fill("#appeal_text", letter_text)
                     page.click("#submit-btn")
 
-                    page.wait_for_selector("#confirmation-reference", timeout=10000)
+                    page.wait_for_selector("#confirmation-reference", timeout=20000)
                     result["reference"] = page.inner_text("#confirmation-reference").strip()
                     result["confirmation_text"] = page.inner_text("#confirmation-message").strip()
 
