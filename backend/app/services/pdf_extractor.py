@@ -35,7 +35,7 @@ def _extract_text_directly(pdf_bytes: bytes) -> str:
 
 
 def _extract_text_via_ocr(pdf_bytes: bytes) -> str:
-    images = convert_from_bytes(pdf_bytes, dpi=150)
+      images = convert_from_bytes(pdf_bytes)
     text_parts = [pytesseract.image_to_string(image) for image in images]
     return "\n".join(text_parts).strip()
 
