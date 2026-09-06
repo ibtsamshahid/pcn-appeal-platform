@@ -96,13 +96,14 @@ def submit_appeal_via_bot(notice, appeal, demo_hold_seconds: float = None) -> di
     def _run():
         try:
             with sync_playwright() as p:
-                       browser = p.chromium.launch(
+                browser = p.chromium.launch(
                     headless=BOT_HEADLESS,
                     slow_mo=150 if not BOT_HEADLESS else 0,  # slow down so a human watching can follow along
                 )
                 try:
                     page = browser.new_page()
                     page.goto(f"{MOCK_SITE_URL}/appeal-form", timeout=30000)
+
                     page.fill("#pcn_reference", pcn_reference)
                     page.fill("#vehicle_registration", vehicle_registration)
                     page.fill("#appellant_name", "Demo Driver")
